@@ -32,10 +32,15 @@ class _SelectLanguageScreenState extends State<SelectLanguageScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(width: 20),
-                Icon(
-                  color: Color(0XFF575757),
-                  Icons.arrow_back,
-                  size: 30.0,
+                InkWell(
+                  onTap: (){
+                    Navigator.pop(context);
+                  },
+                  child: Icon(
+                    color: Color(0XFF575757),
+                    Icons.arrow_back,
+                    size: 30.0,
+                  ),
                 ),
                 SizedBox(width: 20),
                 Text(' اختر اللغة',

@@ -37,7 +37,7 @@ class AppRouter {
 
       default:
         return MaterialPageRoute(
-          builder: (context) => HomeScreen(),
+          builder: (context) => IntroScreen(),
         );
     }
   }

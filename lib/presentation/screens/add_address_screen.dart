@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tamra/presentation/screens/home_screen.dart';
+import 'package:tamra/presentation/screens/layout_screen.dart';
 import 'dart:async';
 import '../../app_router.dart';
 import '../../constants/strings.dart';
@@ -41,10 +42,15 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(width: 20),
-                Icon(
-                  color: Color(0XFF575757),
-                  Icons.arrow_back,
-                  size: 30.0,
+                InkWell(
+                  onTap: (){
+                    Navigator.pop(context);
+                  },
+                  child: Icon(
+                    color: Color(0XFF575757),
+                    Icons.arrow_back,
+                    size: 30.0,
+                  ),
                 ),
                 SizedBox(width: 20),
                 Text('عنوان جديد',
@@ -188,7 +194,7 @@ class _AddAddressScreenState extends State<AddAddressScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => HomeScreen()));
+                                builder: (context) => LayoutScreen()));
                         },
                         child: Row(
                           mainAxisSize: MainAxisSize.max,

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:tamra/presentation/screens/order_screen.dart';
+import 'package:tamra/presentation/screens/order_success_screen.dart';
 import 'dart:async';
 import '../../app_router.dart';
 import '../../constants/strings.dart';
@@ -371,7 +373,12 @@ class _BasketScreenState extends State<BasketScreen> {
                             borderRadius: BorderRadius.all(Radius.circular(25)),
                           ),
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => OrderSuccessScreen()));
+                        },
                         child: Row(
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.center,

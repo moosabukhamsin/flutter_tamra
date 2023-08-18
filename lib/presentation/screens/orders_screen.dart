@@ -34,11 +34,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   SizedBox(width: 20),
-                  Icon(
+                  InkWell(
+                  onTap: (){
+                    Navigator.pop(context);
+                  },
+                  child: Icon(
                     color: Color(0XFF575757),
                     Icons.arrow_back,
                     size: 30.0,
                   ),
+                ),
                   SizedBox(width: 20),
                   Text('طلباتي',
                       style: TextStyle(

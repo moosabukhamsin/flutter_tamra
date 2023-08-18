@@ -3,15 +3,15 @@ import 'dart:async';
 import '../../app_router.dart';
 import '../../constants/strings.dart';
 
-class OrderScreen extends StatefulWidget {
-  const OrderScreen({Key? key}) : super(key: key);
+class OrderSuccessScreen extends StatefulWidget {
+  const OrderSuccessScreen({Key? key}) : super(key: key);
   @override
-  State<OrderScreen> createState() => _OrderScreenState();
+  State<OrderSuccessScreen> createState() => _OrderSuccessScreenState();
 }
 
 enum SingingCharacter { english, arabic }
 
-class _OrderScreenState extends State<OrderScreen> {
+class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
   SingingCharacter? _character = SingingCharacter.english;
 
   @override
@@ -78,7 +78,7 @@ class _OrderScreenState extends State<OrderScreen> {
                             SizedBox(
                               width: 10,
                             ),
-                            Text('تم تسليم الطلب',
+                            Text('تم استلام الطلب',
                                 style: TextStyle(
                                   color: Color(0XFF2E2E2E),
                                   fontSize: 20,
@@ -89,12 +89,15 @@ class _OrderScreenState extends State<OrderScreen> {
                         SizedBox(
                           height: 10,
                         ),
-                        Text('25 sep 2023',
+                        Text('سيتم تجهيز و توصيل طلبك في غضون 4 ساعات',
+                        textAlign: TextAlign.center,
                             style: TextStyle(
                               color: Color(0XFF888888),
                               fontSize: 18,
                               fontWeight: FontWeight.w500,
                             )),
+                           
+                       
                       ],
                     ),
                   ),
@@ -271,50 +274,7 @@ class _OrderScreenState extends State<OrderScreen> {
                           )
                     ],
                   ),
-                  SizedBox(height: 20,),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          onPrimary: Colors.white,
-                          primary: Color(0Xff7C3425), 
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 30, vertical: 8),
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(25)),
-                          ),
-                        ),
-                        onPressed: () {},
-                        child: Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 80,
-                            ),
-                            Icon(
-                              color: Colors.white,
-                              Icons.arrow_back_ios,
-                              size: 18.0,
-                            ),
-                            SizedBox(
-                              width: 5,
-                            ),
-                            Text('اعادة هذا الطلب',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                )),
-                            SizedBox(
-                              width: 80,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  )
-                
+                  
                 ],
               ),
             ),
