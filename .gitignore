@@ -42,3 +42,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase Service Account (contains sensitive keys - DO NOT COMMIT!)
+assets/credentials/service-account.json
