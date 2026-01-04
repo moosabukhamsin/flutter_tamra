@@ -4,6 +4,7 @@ import FirebaseCore
 import FirebaseAuth
 import FirebaseMessaging
 import UserNotifications
+import SafariServices
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -70,5 +71,14 @@ import UserNotifications
       return
     }
     super.application(application, didReceiveRemoteNotification: userInfo, fetchCompletionHandler: completionHandler)
+  }
+  
+  // Handle URL opening for ReCAPTCHA verification
+  override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+    // Handle Firebase Auth URL callbacks (for ReCAPTCHA)
+    if Auth.auth().canHandle(url) {
+      return true
+    }
+    return super.application(app, open: url, options: options)
   }
 }

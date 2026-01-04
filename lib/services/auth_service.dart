@@ -267,6 +267,9 @@ class AuthService {
         return 'معرف التحقق غير صحيح';
       case 'quota-exceeded':
         return 'تم تجاوز الحد المسموح. يرجى المحاولة لاحقاً';
+      case 'web-internal-error':
+      case 'recaptcha-not-available':
+        return 'حدث خطأ في التحقق. يرجى التأكد من الاتصال بالإنترنت والمحاولة مرة أخرى. إذا استمرت المشكلة، جرب على جهاز حقيقي.';
       default:
         return 'حدث خطأ: $errorCode';
     }

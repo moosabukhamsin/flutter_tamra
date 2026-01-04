@@ -54,6 +54,8 @@
 		<string>sms</string>
 		<string>googlechrome</string>
 		<string>comgooglemaps</string>
+		<string>https</string>
+		<string>http</string>
 	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
