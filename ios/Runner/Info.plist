@@ -47,5 +47,26 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>mailto</string>
+		<string>sms</string>
+		<string>googlechrome</string>
+		<string>comgooglemaps</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.tamra.app1</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app-1-972692803858-ios-2c1ac9d6359961423ca3cb</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

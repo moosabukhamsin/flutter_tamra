@@ -11,13 +11,17 @@ import 'providers/cart_provider.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Firebase is initialized in AppDelegate.swift for iOS
-  // On iOS, FirebaseApp.configure() is called in AppDelegate
+  // On iOS, FirebaseApp.configure() is called in AppDelegate (REQUIRED for Phone Auth)
   // On other platforms, we initialize here
   try {
-    Firebase.app(); // Check if already initialized
+    // Try to get Firebase app instance - if it exists, Firebase is already initialized
+    final app = Firebase.app();
+    print('✅ Firebase already initialized: ${app.name}');
   } catch (e) {
-    // Firebase not initialized yet, initialize it (for non-iOS platforms)
+    // Firebase not initialized yet (non-iOS platforms only)
+    // On iOS, Firebase MUST be initialized in AppDelegate.swift for Phone Auth to work
     await Firebase.initializeApp();
+    print('✅ Firebase initialized for non-iOS platform');
   }
   
   // تهيئة خدمة الإشعارات
