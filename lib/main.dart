@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:provider/provider.dart';
 import 'app_router.dart';
 import 'l10n/app_localizations.dart';
@@ -22,6 +23,22 @@ void main() async {
     // On iOS, Firebase MUST be initialized in AppDelegate.swift for Phone Auth to work
     await Firebase.initializeApp();
     print('✅ Firebase initialized for non-iOS platform');
+  }
+  
+  // Initialize Firebase App Check
+  try {
+    await FirebaseAppCheck.instance.activate(
+      // For iOS/macOS - use Device Check (or App Attest for iOS 14+)
+      appleProvider: AppleProvider.deviceCheck,
+      // For Android - use Play Integrity (or debug for development)
+      androidProvider: AndroidProvider.debug, // Change to AndroidProvider.playIntegrity for production
+      // For Web - use reCAPTCHA v3 (optional, only if you have web app)
+      // webProvider: ReCaptchaV3Provider('your-recaptcha-site-key'),
+    );
+    print('✅ Firebase App Check activated');
+  } catch (e) {
+    print('⚠️  Firebase App Check activation failed: $e');
+    // Continue without App Check if it fails
   }
   
   // تهيئة خدمة الإشعارات
