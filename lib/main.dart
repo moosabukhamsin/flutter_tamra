@@ -68,9 +68,16 @@ class _MyAppState extends State<MyApp> {
         supportedLocales: AppLocalizations.supportedLocales,
         onGenerateRoute: widget.appRouter.generateRoute,
         builder: (context, child) {
-          return LocaleDirectionality(
-            locale: _locale,
-            child: child ?? const SizedBox(),
+          return GestureDetector(
+            onTap: () {
+              // إخفاء الكيبورد عند الضغط على مساحة فارغة
+              FocusScope.of(context).unfocus();
+            },
+            behavior: HitTestBehavior.opaque,
+            child: LocaleDirectionality(
+              locale: _locale,
+              child: child ?? const SizedBox(),
+            ),
           );
         },
       ),
