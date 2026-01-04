@@ -46,9 +46,10 @@ import SafariServices
       print("ℹ️  Running on Simulator - APNs token not set, will use ReCAPTCHA fallback")
     #else
       // Real device environment - set production token
-      // Use .unknown to let Firebase detect the environment automatically
-      Auth.auth().setAPNSToken(deviceToken, type: .unknown)
-      print("✅ APNs token set for device")
+      // Important: Use .production for real devices to enable silent APNs verification
+      // This helps avoid ReCAPTCHA when possible
+      Auth.auth().setAPNSToken(deviceToken, type: .production)
+      print("✅ APNs token set for device (production)")
     #endif
     
     super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
@@ -75,10 +76,25 @@ import SafariServices
   
   // Handle URL opening for ReCAPTCHA verification
   override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+    print("🔗 App opened with URL: \(url.absoluteString)")
     // Handle Firebase Auth URL callbacks (for ReCAPTCHA)
     if Auth.auth().canHandle(url) {
+      print("✅ Firebase Auth can handle URL - processing ReCAPTCHA callback")
       return true
     }
+    print("⚠️ Firebase Auth cannot handle URL, passing to super")
     return super.application(app, open: url, options: options)
+  }
+  
+  // Handle URL opening from Scene (iOS 13+) - مهم جداً لـ ReCAPTCHA
+  @available(iOS 13.0, *)
+  override func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    guard let url = URLContexts.first?.url else { return }
+    print("🔗 Scene opened with URL: \(url.absoluteString)")
+    if Auth.auth().canHandle(url) {
+      print("✅ Firebase Auth can handle URL in scene - processing ReCAPTCHA callback")
+      return
+    }
+    print("⚠️ Firebase Auth cannot handle URL in scene")
   }
 }

@@ -29,23 +29,30 @@ class AuthService {
       }
 
       // إرسال OTP
+      // زيادة timeout لإعطاء ReCAPTCHA وقت كافي للظهور والتفاعل
+      print('📱 Starting phone verification for: $formattedPhone');
       await _auth.verifyPhoneNumber(
         phoneNumber: formattedPhone,
         verificationCompleted: (PhoneAuthCredential credential) {
+          print('✅ Phone verification completed automatically');
           // في حالة التحقق التلقائي (نادراً ما يحدث)
           _signInWithCredential(credential);
         },
         verificationFailed: (FirebaseAuthException e) {
+          print('❌ Phone verification failed: ${e.code} - ${e.message}');
           onError(_getErrorMessage(e.code));
         },
         codeSent: (String verificationId, int? resendToken) {
+          print('✅ Verification code sent successfully');
           // تم إرسال الكود بنجاح
           onCodeSent(verificationId);
         },
         codeAutoRetrievalTimeout: (String verificationId) {
+          print('⏱️ Auto retrieval timeout - verificationId received');
           // انتهت مهلة الاسترجاع التلقائي
+          // لكن verificationId متاح للاستخدام
         },
-        timeout: const Duration(seconds: 60),
+        timeout: const Duration(seconds: 120), // زيادة من 60 إلى 120 ثانية لإعطاء ReCAPTCHA وقت كافي
       );
     } catch (e) {
       onError('حدث خطأ: ${e.toString()}');
@@ -269,7 +276,8 @@ class AuthService {
         return 'تم تجاوز الحد المسموح. يرجى المحاولة لاحقاً';
       case 'web-internal-error':
       case 'recaptcha-not-available':
-        return 'حدث خطأ في التحقق. يرجى التأكد من الاتصال بالإنترنت والمحاولة مرة أخرى. إذا استمرت المشكلة، جرب على جهاز حقيقي.';
+      case 'missing-recaptcha-token':
+        return 'حدث خطأ في عرض صفحة التحقق. يرجى التأكد من الاتصال بالإنترنت والمحاولة مرة أخرى. إذا استمرت المشكلة، أعد تشغيل التطبيق.';
       default:
         return 'حدث خطأ: $errorCode';
     }
