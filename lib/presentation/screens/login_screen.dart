@@ -27,34 +27,47 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
     });
 
-    await _authService.sendOTP(
-      phoneNumber: _phoneController.text.trim(),
-      onCodeSent: (String verificationId) {
-        setState(() {
-          _isLoading = false;
-        });
-        // الانتقال إلى شاشة التحقق مع إرسال verificationId
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => VerifyScreen(
-              verificationId: verificationId,
-              phoneNumber: _phoneController.text.trim(),
+    try {
+      await _authService.sendOTP(
+        phoneNumber: _phoneController.text.trim(),
+        onCodeSent: (String verificationId) {
+          if (!mounted) return;
+          setState(() {
+            _isLoading = false;
+          });
+          // الانتقال إلى شاشة التحقق مع إرسال verificationId
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VerifyScreen(
+                verificationId: verificationId,
+                phoneNumber: _phoneController.text.trim(),
+              ),
             ),
-          ),
-        );
-      },
-      onError: (String error) {
-        setState(() {
-          _isLoading = false;
-        });
-        _showError(error);
-      },
-    );
+          );
+        },
+        onError: (String error) {
+          if (!mounted) return;
+          setState(() {
+            _isLoading = false;
+          });
+          _showError(error);
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      _showError('حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى');
+      print('Error in _sendOTP: $e');
+    }
   }
 
   void _showError(String message) {

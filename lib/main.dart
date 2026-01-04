@@ -10,7 +10,15 @@ import 'providers/cart_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  // Firebase is initialized in AppDelegate.swift for iOS
+  // On iOS, FirebaseApp.configure() is called in AppDelegate
+  // On other platforms, we initialize here
+  try {
+    Firebase.app(); // Check if already initialized
+  } catch (e) {
+    // Firebase not initialized yet, initialize it (for non-iOS platforms)
+    await Firebase.initializeApp();
+  }
   
   // تهيئة خدمة الإشعارات
   final notificationService = NotificationService();
@@ -71,9 +79,12 @@ class _MyAppState extends State<MyApp> {
           return GestureDetector(
             onTap: () {
               // إخفاء الكيبورد عند الضغط على مساحة فارغة
-              FocusScope.of(context).unfocus();
+              final currentFocus = FocusScope.of(context);
+              if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
+                currentFocus.focusedChild!.unfocus();
+              }
             },
-            behavior: HitTestBehavior.opaque,
+            behavior: HitTestBehavior.translucent,
             child: LocaleDirectionality(
               locale: _locale,
               child: child ?? const SizedBox(),
