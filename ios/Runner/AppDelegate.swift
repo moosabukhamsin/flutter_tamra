@@ -1,6 +1,7 @@
 import UIKit
 import Flutter
-import FirebaseCore
+// Firebase initialization is handled in Flutter (main.dart)
+// Don't call FirebaseApp.configure() here to avoid duplicate initialization
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -8,7 +9,8 @@ import FirebaseCore
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    FirebaseApp.configure()
+    // Firebase is initialized in Flutter main.dart via Firebase.initializeApp()
+    // Calling FirebaseApp.configure() here causes duplicate initialization issues
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
