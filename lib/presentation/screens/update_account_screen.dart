@@ -35,9 +35,21 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
   @override
   void dispose() {
     _isDisposed = true;
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
+    try {
+      _nameController.dispose();
+    } catch (e) {
+      debugPrint('Error disposing name controller: $e');
+    }
+    try {
+      _emailController.dispose();
+    } catch (e) {
+      debugPrint('Error disposing email controller: $e');
+    }
+    try {
+      _phoneController.dispose();
+    } catch (e) {
+      debugPrint('Error disposing phone controller: $e');
+    }
     super.dispose();
   }
 
@@ -58,38 +70,67 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
   Future<void> _loadUserData() async {
     final user = _authService.currentUser;
     if (user != null) {
-      final userData = await _authService.getUserProfile(user.uid, 'client');
-      if (!mounted || _isDisposed) return;
+      try {
+        final userData = await _authService.getUserProfile(user.uid, 'client');
+        if (!mounted || _isDisposed) return;
 
-      if (userData != null) {
-        try {
-          setState(() {
-            _nameController.text = userData['fullName'] ?? '';
-            _emailController.text = userData['email'] ?? '';
-            String phone = userData['phoneNumber'] ?? user.phoneNumber ?? '';
-            _phoneController.text = _formatPhoneForDisplay(phone);
-          });
-        } catch (e) {
-          // Controller تم dispose، تجاهل
-          debugPrint('Error setting controller values: $e');
+        if (userData != null) {
+          if (mounted && !_isDisposed) {
+            try {
+              setState(() {
+                if (!_isDisposed) {
+                  _nameController.text = userData['fullName'] ?? '';
+                  _emailController.text = userData['email'] ?? '';
+                  String phone = userData['phoneNumber'] ?? user.phoneNumber ?? '';
+                  _phoneController.text = _formatPhoneForDisplay(phone);
+                }
+              });
+            } catch (e) {
+              // Controller تم dispose، تجاهل
+              debugPrint('Error setting controller values: $e');
+            }
+          }
+        } else if (user.phoneNumber != null) {
+          if (mounted && !_isDisposed) {
+            try {
+              setState(() {
+                if (!_isDisposed) {
+                  _phoneController.text = _formatPhoneForDisplay(user.phoneNumber!);
+                }
+              });
+            } catch (e) {
+              // Controller تم dispose، تجاهل
+              debugPrint('Error setting phone controller: $e');
+            }
+          }
+        } else {
+          // إذا لم يكن هناك رقم جوال، اترك الحقل فارغاً (prefix +966 سيظهر)
+          if (mounted && !_isDisposed) {
+            try {
+              setState(() {
+                if (!_isDisposed) {
+                  _phoneController.text = '';
+                }
+              });
+            } catch (e) {
+              debugPrint('Error setting default phone: $e');
+            }
+          }
         }
-      } else if (user.phoneNumber != null) {
-        try {
-          setState(() {
-            _phoneController.text = _formatPhoneForDisplay(user.phoneNumber!);
-          });
-        } catch (e) {
-          // Controller تم dispose، تجاهل
-          debugPrint('Error setting phone controller: $e');
-        }
-      } else {
-        // إذا لم يكن هناك رقم جوال، اترك الحقل فارغاً (prefix +966 سيظهر)
-        try {
-          setState(() {
-            _phoneController.text = '';
-          });
-        } catch (e) {
-          debugPrint('Error setting default phone: $e');
+      } catch (e) {
+        // خطأ في جلب البيانات (مثل permission-denied)
+        debugPrint('خطأ في جلب بيانات الملف الشخصي: $e');
+        // نستخدم البيانات من Firebase Auth فقط
+        if (mounted && !_isDisposed && user.phoneNumber != null) {
+          try {
+            setState(() {
+              if (!_isDisposed) {
+                _phoneController.text = _formatPhoneForDisplay(user.phoneNumber!);
+              }
+            });
+          } catch (e) {
+            debugPrint('Error setting phone from Auth: $e');
+          }
         }
       }
     }
@@ -209,12 +250,38 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
       }
     } catch (e) {
       if (!mounted || _isDisposed) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('حدث خطأ: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      
+      // طباعة الخطأ في console للمطورين
+      debugPrint('خطأ في حفظ البيانات: $e');
+      
+      String errorMessage = 'حدث خطأ أثناء حفظ البيانات';
+      String errorString = e.toString().toLowerCase();
+      
+      if (errorString.contains('permission-denied')) {
+        errorMessage = 'لا يمكن حفظ البيانات. يرجى المحاولة مرة أخرى';
+      } else if (errorString.contains('network') || errorString.contains('unavailable') || errorString.contains('connection')) {
+        errorMessage = 'خطأ في الاتصال بالإنترنت. يرجى التحقق من الاتصال والمحاولة مرة أخرى';
+      } else if (errorString.contains('already-exists') || errorString.contains('already exists')) {
+        errorMessage = 'البريد الإلكتروني مستخدم بالفعل';
+      } else if (errorString.contains('invalid-argument') || errorString.contains('invalid argument')) {
+        errorMessage = 'البيانات المدخلة غير صحيحة';
+      } else if (errorString.contains('not-found') || errorString.contains('not found')) {
+        errorMessage = 'المستخدم غير موجود';
+      } else if (errorString.contains('unauthenticated') || errorString.contains('unauthorized')) {
+        errorMessage = 'يجب تسجيل الدخول أولاً';
+      } else {
+        errorMessage = 'حدث خطأ أثناء حفظ البيانات. يرجى المحاولة مرة أخرى';
+      }
+      
+      if (mounted && !_isDisposed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
     } finally {
       if (mounted && !_isDisposed) {
         setState(() {
@@ -240,20 +307,18 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
         statusBarBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
-        body: SingleChildScrollView(
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Container(
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height,
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage('assets/images/back_1.png'),
-                  fit: BoxFit.fill,
-                ),
-              ),
-              child: SafeArea(
+        resizeToAvoidBottomInset: true,
+        body: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/back_1.png'),
+              fit: BoxFit.fill,
+            ),
+          ),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              child: Directionality(
+                textDirection: TextDirection.rtl,
                 child: Column(
                   children: [
                     SizedBox(height: MediaQuery.of(context).padding.top + 30),

@@ -36,6 +36,7 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
+          backgroundColor: Colors.white,
           resizeToAvoidBottomInset: false,
           appBar: AppBar(
             //  shape:Border.n
@@ -74,6 +75,9 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: ListView(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).padding.bottom + 20,
+                ),
                 children: [
                   Container(
                     alignment: Alignment.center,
@@ -189,20 +193,42 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                Text(
-                                  '${item.quantity} ${item.packagingWeight}',
-                                  style: TextStyle(
-                                    color: Color(0XFF3D3D3D),
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '${item.quantity}',
+                                      style: TextStyle(
+                                        color: Color(0XFF3D3D3D),
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    Text(
+                                      ' × ',
+                                      style: TextStyle(
+                                        color: Color(0XFF888888),
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                    Text(
+                                      item.packagingWeight,
+                                      style: TextStyle(
+                                        color: Color(0XFF3D3D3D),
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 ),
+                                SizedBox(height: 4),
                                 Text(
                                   '${item.totalPrice.toStringAsFixed(2)} رس',
                                   style: TextStyle(
-                                    color: Color(0XFF3D3D3D),
+                                    color: Color(0XFF7C3425),
                                     fontSize: 17,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],

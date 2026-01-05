@@ -727,12 +727,14 @@ class _ProviderScreenState extends State<ProviderScreen> {
                               Expanded(
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     // إذا كانت الكمية 0، عرض زر إضافة مباشر
                                     if (quantity == 0)
-                                      Material(
-                                        color: Colors.transparent,
-                                        child: InkWell(
+                                      Flexible(
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          child: InkWell(
                                           onTap: () => _updateQuantity(productId, 1, product),
                                           borderRadius: BorderRadius.circular(25),
                                           child: Container(
@@ -773,19 +775,21 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                             ),
                                           ),
                                         ),
+                                      ),
                                       )
                                     else
                                       // إذا كانت الكمية أكبر من 0، عرض أزرار + و - و الكمية
-                                      Container(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal: 5,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(50),
-                                          color: Color(0XFFeeeeee),
-                                        ),
-                                        child: Row(
+                                      Flexible(
+                                        child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 5,
+                                            vertical: 4,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(50),
+                                            color: Color(0XFFeeeeee),
+                                          ),
+                                          child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           textDirection: TextDirection.rtl,
                                           children: [
@@ -804,7 +808,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                                 ),
                                               ),
                                             ),
-                                            SizedBox(width: 10),
+                                            Flexible(child: SizedBox(width: 10)),
                                             // الكمية في المنتصف
                                             Container(
                                               alignment: Alignment.center,
@@ -828,7 +832,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                                 ),
                                               ),
                                             ),
-                                            SizedBox(width: 10),
+                                            Flexible(child: SizedBox(width: 10)),
                                             // زر النقصان (على اليسار في RTL)
                                             Material(
                                               color: Colors.transparent,
@@ -847,6 +851,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                           ],
                                         ),
                                       ),
+                                    ),
                                   ],
                                 ),
                               ),

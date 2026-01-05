@@ -409,7 +409,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        SizedBox(width: isSmallScreen ? 4 : 8),
+                        Flexible(child: SizedBox(width: isSmallScreen ? 4 : 8)),
                         Expanded(
                           flex: isSmallScreen ? 4 : 3,
                           child: _buildPriceWithSymbol(
@@ -419,7 +419,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        SizedBox(width: isSmallScreen ? 4 : 8),
+                        Flexible(child: SizedBox(width: isSmallScreen ? 4 : 8)),
                         Expanded(
                           flex: isSmallScreen ? 4 : 3,
                           child: Text(
@@ -432,7 +432,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        SizedBox(width: isSmallScreen ? 4 : 8),
+                        Flexible(child: SizedBox(width: isSmallScreen ? 4 : 8)),
                         Expanded(
                           flex: isSmallScreen ? 4 : 3,
                           child: ElevatedButton(

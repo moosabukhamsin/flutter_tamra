@@ -945,10 +945,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         Expanded(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               // إذا كانت الكمية 0، عرض زر إضافة مباشر
                               if (quantity == 0)
-                                Material(
+                                Flexible(
+                                  child: Material(
                                   color: Colors.transparent,
                                   child: InkWell(
                                     onTap: () =>
@@ -993,10 +995,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                     ),
                                   ),
+                                  ),
                                 )
                               else
                                 // إذا كانت الكمية أكبر من 0، عرض أزرار + و - و الكمية
-                                Container(
+                                Flexible(
+                                  child: Container(
                                   padding: EdgeInsets.symmetric(
                                     horizontal: 5,
                                     vertical: 4,
@@ -1026,7 +1030,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 10),
+                                      Flexible(child: SizedBox(width: 10)),
                                       // الكمية في المنتصف
                                       Container(
                                         alignment: Alignment.center,
@@ -1051,7 +1055,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                           ),
                                         ),
                                       ),
-                                      SizedBox(width: 10),
+                                      Flexible(child: SizedBox(width: 10)),
                                       // زر النقصان (على اليسار في RTL)
                                       Material(
                                         color: Colors.transparent,
@@ -1072,6 +1076,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ],
                                   ),
                                 ),
+                                  ),
                             ],
                           ),
                         ),

@@ -43,12 +43,15 @@ class _ContactScreenState extends State<ContactScreen> {
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
-      child: SafeArea(
-        top: false,
-        child: Scaffold(
-          resizeToAvoidBottomInset: false,
-          appBar: AppBar(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        extendBody: false,
+        extendBodyBehindAppBar: false,
+        resizeToAvoidBottomInset: false,
+        appBar: AppBar(
             bottomOpacity: 0.0,
             elevation: 0.0,
             centerTitle: true,
@@ -58,6 +61,8 @@ class _ContactScreenState extends State<ContactScreen> {
               statusBarColor: Colors.transparent,
               statusBarIconBrightness: Brightness.dark,
               statusBarBrightness: Brightness.light,
+              systemNavigationBarColor: Colors.white,
+              systemNavigationBarIconBrightness: Brightness.dark,
             ),
             leading: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -88,178 +93,195 @@ class _ContactScreenState extends State<ContactScreen> {
               ],
             ),
           ),
-          body: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  SizedBox(height: topSpacing),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          body: SafeArea(
+            bottom: true,
+            child: Container(
+              color: Colors.white,
+              child: Directionality(
+                textDirection: TextDirection.rtl,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.max,
                     children: [
-                      Image.asset(
-                        'assets/images/logo_1.png',
-                        width: logoWidth.clamp(150.0, 250.0),
-                        fit: BoxFit.contain,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: logoSpacing),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'info@tamra.sa',
-                          style: TextStyle(
-                            fontSize: contactFontSize * textScaleFactor,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0XFF3D3D3D),
+                          SizedBox(height: topSpacing),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset(
+                            'assets/images/logo_1.png',
+                            width: logoWidth.clamp(150.0, 250.0),
+                            fit: BoxFit.contain,
                           ),
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                  SizedBox(height: textSpacing),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          '00966543435252',
-                          style: TextStyle(
-                            fontSize: contactFontSize * textScaleFactor,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0XFF3D3D3D),
+                      SizedBox(height: logoSpacing),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'info@tamra.sa',
+                              style: TextStyle(
+                                fontSize: contactFontSize * textScaleFactor,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0XFF3D3D3D),
+                              ),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                          overflow: TextOverflow.ellipsis,
+                        ],
+                      ),
+                      SizedBox(height: textSpacing),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              '00966543435252',
+                              style: TextStyle(
+                                fontSize: contactFontSize * textScaleFactor,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0XFF3D3D3D),
+                              ),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: socialSpacing),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Image.asset(
+                              'assets/images/social.png',
+                              width: socialImageWidth.clamp(200.0, 350.0),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Expanded(
+                        child: Container(
+                          color: Colors.white,
+                          child: Align(
+                            alignment: FractionalOffset.bottomCenter,
+                            child: Container(
+                              color: Colors.white,
+                              padding: EdgeInsets.only(
+                                top: bottomPadding,
+                                bottom: bottomPadding + MediaQuery.of(context).padding.bottom,
+                              ),
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final availableWidth = constraints.maxWidth;
+                                  final buttonSpacing = availableWidth * 0.05;
+                                  final responsiveButtonWidth = (availableWidth - (buttonSpacing * 2)) / 3;
+                                  
+                                  return Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Flexible(
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Color(0XFF888888),
+                                            minimumSize: Size(
+                                              responsiveButtonWidth,
+                                              buttonHeight.clamp(50.0, 80.0),
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: screenWidth * 0.02,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.all(
+                                                Radius.circular(5),
+                                              ),
+                                            ),
+                                          ),
+                                          onPressed: () {},
+                                          child: Image.asset(
+                                            'assets/images/con_tel.png',
+                                            width: buttonIconSize.clamp(30.0, 50.0),
+                                            fit: BoxFit.contain,
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: buttonSpacing),
+                                      Flexible(
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Color(0XFF888888),
+                                            minimumSize: Size(
+                                              responsiveButtonWidth,
+                                              buttonHeight.clamp(50.0, 80.0),
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: screenWidth * 0.02,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.all(
+                                                Radius.circular(5),
+                                              ),
+                                            ),
+                                          ),
+                                          onPressed: () {},
+                                          child: Image.asset(
+                                            'assets/images/con_wat.png',
+                                            width: buttonIconSize.clamp(30.0, 50.0),
+                                            fit: BoxFit.contain,
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: buttonSpacing),
+                                      Flexible(
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: Color(0XFF888888),
+                                            minimumSize: Size(
+                                              responsiveButtonWidth,
+                                              buttonHeight.clamp(50.0, 80.0),
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: screenWidth * 0.02,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.all(
+                                                Radius.circular(5),
+                                              ),
+                                            ),
+                                          ),
+                                          onPressed: () {},
+                                          child: Image.asset(
+                                            'assets/images/con_let.png',
+                                            width: buttonIconSize.clamp(30.0, 50.0),
+                                            fit: BoxFit.contain,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
                         ),
+                      ),
+                      // Container أبيض لملء المساحة السفلية وتغطية شريط التنقل
+                      Container(
+                        height: MediaQuery.of(context).padding.bottom,
+                        color: Colors.white,
                       ),
                     ],
                   ),
-                  SizedBox(height: socialSpacing),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Image.asset(
-                          'assets/images/social.png',
-                          width: socialImageWidth.clamp(200.0, 350.0),
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Expanded(
-                    child: Align(
-                      alignment: FractionalOffset.bottomCenter,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: bottomPadding),
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final availableWidth = constraints.maxWidth;
-                            final buttonSpacing = availableWidth * 0.05;
-                            final responsiveButtonWidth = (availableWidth - (buttonSpacing * 2)) / 3;
-                            
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Flexible(
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Color(0XFF888888),
-                                      minimumSize: Size(
-                                        responsiveButtonWidth,
-                                        buttonHeight.clamp(50.0, 80.0),
-                                      ),
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: screenWidth * 0.02,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.all(
-                                          Radius.circular(5),
-                                        ),
-                                      ),
-                                    ),
-                                    onPressed: () {},
-                                    child: Image.asset(
-                                      'assets/images/con_tel.png',
-                                      width: buttonIconSize.clamp(30.0, 50.0),
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: buttonSpacing),
-                                Flexible(
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Color(0XFF888888),
-                                      minimumSize: Size(
-                                        responsiveButtonWidth,
-                                        buttonHeight.clamp(50.0, 80.0),
-                                      ),
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: screenWidth * 0.02,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.all(
-                                          Radius.circular(5),
-                                        ),
-                                      ),
-                                    ),
-                                    onPressed: () {},
-                                    child: Image.asset(
-                                      'assets/images/con_wat.png',
-                                      width: buttonIconSize.clamp(30.0, 50.0),
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: buttonSpacing),
-                                Flexible(
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Color(0XFF888888),
-                                      minimumSize: Size(
-                                        responsiveButtonWidth,
-                                        buttonHeight.clamp(50.0, 80.0),
-                                      ),
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: screenWidth * 0.02,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.all(
-                                          Radius.circular(5),
-                                        ),
-                                      ),
-                                    ),
-                                    onPressed: () {},
-                                    child: Image.asset(
-                                      'assets/images/con_let.png',
-                                      width: buttonIconSize.clamp(30.0, 50.0),
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
   startTime() async {

@@ -24,6 +24,8 @@ class _BasketScreenState extends State<BasketScreen> {
   String? _selectedAddressId;
   String? _clientAddress;
   String? _clientAddressName;
+  bool _hasAddresses = false;
+  bool _isLoadingAddresses = true;
 
   @override
   void initState() {
@@ -64,7 +66,21 @@ class _BasketScreenState extends State<BasketScreen> {
 
   Future<void> _loadDefaultAddress() async {
     final user = _authService.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      if (mounted) {
+        setState(() {
+          _isLoadingAddresses = false;
+          _hasAddresses = false;
+        });
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingAddresses = true;
+      });
+    }
 
     try {
       // جلب العنوان الافتراضي
@@ -82,6 +98,8 @@ class _BasketScreenState extends State<BasketScreen> {
           _selectedAddressId = addressesSnapshot.docs.first.id;
           _clientAddress = addressData['addressDescription'] ?? '';
           _clientAddressName = addressData['addressName'] ?? '';
+          _hasAddresses = true;
+          _isLoadingAddresses = false;
         });
       } else {
         // إذا لم يوجد عنوان افتراضي، جلب أول عنوان
@@ -98,11 +116,28 @@ class _BasketScreenState extends State<BasketScreen> {
             _selectedAddressId = allAddressesSnapshot.docs.first.id;
             _clientAddress = addressData['addressDescription'] ?? '';
             _clientAddressName = addressData['addressName'] ?? '';
+            _hasAddresses = true;
+            _isLoadingAddresses = false;
+          });
+        } else if (mounted) {
+          // لا يوجد عناوين على الإطلاق
+          setState(() {
+            _hasAddresses = false;
+            _selectedAddressId = null;
+            _clientAddress = null;
+            _clientAddressName = null;
+            _isLoadingAddresses = false;
           });
         }
       }
     } catch (e) {
       // Error loading address
+      if (mounted) {
+        setState(() {
+          _isLoadingAddresses = false;
+          _hasAddresses = false;
+        });
+      }
     }
   }
 
@@ -117,6 +152,7 @@ class _BasketScreenState extends State<BasketScreen> {
               _selectedAddressId = addressId;
               _clientAddress = addressDescription;
               _clientAddressName = addressName;
+              _hasAddresses = true;
             });
           },
         ),
@@ -414,8 +450,7 @@ class _BasketScreenState extends State<BasketScreen> {
                                           ),
                                           SizedBox(height: 8),
                                           // اسم العنوان
-                                          if (_clientAddressName == null &&
-                                              _clientAddress == null)
+                                          if (_isLoadingAddresses)
                                             // Placeholder أثناء التحميل
                                             Column(
                                               crossAxisAlignment:
@@ -441,6 +476,31 @@ class _BasketScreenState extends State<BasketScreen> {
                                                         BorderRadius.circular(
                                                             4),
                                                     color: Color(0XFFE0E0E0),
+                                                  ),
+                                                ),
+                                              ],
+                                            )
+                                          else if (!_hasAddresses)
+                                            // لا يوجد عناوين - عرض رسالة
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'لا يوجد لديك عناوين',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Color(0XFF888888),
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 4),
+                                                Text(
+                                                  'يرجى إضافة عنوان للتوصيل',
+                                                  style: TextStyle(
+                                                    fontWeight: FontWeight.w400,
+                                                    color: Color(0XFF888888),
+                                                    fontSize: 12,
                                                   ),
                                                 ),
                                               ],
@@ -499,36 +559,95 @@ class _BasketScreenState extends State<BasketScreen> {
                                   ],
                                 ),
                                 SizedBox(height: 12),
-                                // زر تغيير العنوان
+                                // زر إضافة/تغيير العنوان
                                 SizedBox(
                                   width: double.infinity,
-                                  child: OutlinedButton.icon(
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: Color(0XFF7C3425),
-                                      side: BorderSide(
-                                        color: Color(0XFF7C3425),
-                                        width: 1.5,
-                                      ),
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 10,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                    onPressed: _selectAddress,
-                                    icon:
-                                        Icon(Icons.edit_location_alt, size: 18),
-                                    label: Text(
-                                      'تغيير العنوان',
-                                      style: TextStyle(
-                                        color: Color(0XFF7C3425),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
+                                  child: _isLoadingAddresses
+                                      ? OutlinedButton.icon(
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: Color(0XFF7C3425),
+                                            side: BorderSide(
+                                              color: Color(0XFF7C3425),
+                                              width: 1.5,
+                                            ),
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 10,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                          ),
+                                          onPressed: null,
+                                          icon: SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation<Color>(
+                                                Color(0XFF7C3425),
+                                              ),
+                                            ),
+                                          ),
+                                          label: Text(
+                                            'جاري التحميل...',
+                                            style: TextStyle(
+                                              color: Color(0XFF7C3425),
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        )
+                                      : _hasAddresses
+                                          ? OutlinedButton.icon(
+                                              style: OutlinedButton.styleFrom(
+                                                foregroundColor: Color(0XFF7C3425),
+                                                side: BorderSide(
+                                                  color: Color(0XFF7C3425),
+                                                  width: 1.5,
+                                                ),
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 10,
+                                                ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              onPressed: _selectAddress,
+                                              icon: Icon(Icons.edit_location_alt, size: 18),
+                                              label: Text(
+                                                'تغيير العنوان',
+                                                style: TextStyle(
+                                                  color: Color(0XFF7C3425),
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            )
+                                          : ElevatedButton.icon(
+                                              style: ElevatedButton.styleFrom(
+                                                foregroundColor: Colors.white,
+                                                backgroundColor: Color(0XFF7C3425),
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 10,
+                                                ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                              ),
+                                              onPressed: _selectAddress,
+                                              icon: Icon(Icons.add_location_alt, size: 18),
+                                              label: Text(
+                                                'إضافة عنوان',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
                                 ),
                               ],
                             ),
@@ -808,7 +927,7 @@ class _BasketScreenState extends State<BasketScreen> {
                             ),
                           ),
                           onPressed:
-                              _isLoading || cart.isEmpty ? null : _createOrder,
+                              _isLoading || cart.isEmpty || _isLoadingAddresses || !_hasAddresses || _selectedAddressId == null ? null : _createOrder,
                           child: _isLoading
                               ? const Padding(
                                   padding: EdgeInsets.all(8.0),
