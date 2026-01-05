@@ -7,10 +7,7 @@ import UserNotifications
 import SafariServices
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, AuthUIDelegate {
-  
-  // Keep a reference to the SFSafariViewController to prevent it from being deallocated
-  weak var safariViewController: SFSafariViewController?
+@objc class AppDelegate: FlutterAppDelegate {
   
   override func application(
     _ application: UIApplication,
@@ -23,9 +20,9 @@ import SafariServices
     Auth.auth().useAppLanguage()
     Auth.auth().settings?.isAppVerificationDisabledForTesting = false
     
-    // Set AppDelegate as AuthUIDelegate for ReCAPTCHA presentation
-    // This allows us to control how ReCAPTCHA is presented and kept open
-    print("✅ AppDelegate configured as AuthUIDelegate for ReCAPTCHA handling")
+    // Note: Flutter Firebase Auth plugin doesn't support uiDelegate parameter
+    // Firebase will handle ReCAPTCHA presentation automatically
+    print("✅ Firebase initialized - ReCAPTCHA will be handled automatically")
     
     GeneratedPluginRegistrant.register(with: self)
     
@@ -97,71 +94,6 @@ import SafariServices
     }
     print("⚠️ Firebase Auth cannot handle URL, passing to super")
     return super.application(app, open: url, options: options)
-  }
-  
-  // MARK: - AuthUIDelegate Methods
-  
-  /// Present ReCAPTCHA view controller - ensures it stays open longer
-  func present(_ viewControllerToPresent: UIViewController, animated flag: Bool, completion: (() -> Void)?) {
-    print("🔐 AppDelegate AuthUIDelegate: Presenting ReCAPTCHA view controller")
-    
-    // Get the root view controller from the app's window
-    guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-          let rootViewController = windowScene.windows.first?.rootViewController else {
-      print("⚠️ Could not find root view controller")
-      completion?()
-      return
-    }
-    
-    // Find the topmost view controller
-    var topViewController = rootViewController
-    while let presentedViewController = topViewController.presentedViewController {
-      topViewController = presentedViewController
-    }
-    
-    // If it's a SFSafariViewController, keep a reference to it
-    if let safariVC = viewControllerToPresent as? SFSafariViewController {
-      self.safariViewController = safariVC
-      print("✅ SFSafariViewController reference saved - ReCAPTCHA will stay open")
-      
-      // Configure SafariViewController for better presentation
-      safariVC.preferredControlTintColor = UIColor.systemBlue
-      safariVC.modalPresentationStyle = .fullScreen
-    }
-    
-    // Present the view controller
-    topViewController.present(viewControllerToPresent, animated: flag) {
-      print("✅ ReCAPTCHA view controller presented successfully")
-      completion?()
-    }
-  }
-  
-  /// Dismiss ReCAPTCHA view controller
-  func dismiss(animated flag: Bool, completion: (() -> Void)?) {
-    print("🔐 AppDelegate AuthUIDelegate: Dismissing ReCAPTCHA view controller")
-    
-    // Find the topmost view controller
-    guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-          let rootViewController = windowScene.windows.first?.rootViewController else {
-      completion?()
-      return
-    }
-    
-    var topViewController = rootViewController
-    while let presentedViewController = topViewController.presentedViewController {
-      topViewController = presentedViewController
-    }
-    
-    // Only dismiss if it's actually presenting something
-    if topViewController.presentedViewController != nil {
-      topViewController.dismiss(animated: flag) {
-        print("✅ ReCAPTCHA view controller dismissed")
-        self.safariViewController = nil
-        completion?()
-      }
-    } else {
-      completion?()
-    }
   }
   
 }

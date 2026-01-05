@@ -52,7 +52,7 @@ class AuthService {
           // انتهت مهلة الاسترجاع التلقائي
           // لكن verificationId متاح للاستخدام
         },
-        timeout: const Duration(seconds: 120), // زيادة من 60 إلى 120 ثانية لإعطاء ReCAPTCHA وقت كافي
+        timeout: const Duration(seconds: 180), // زيادة إلى 180 ثانية لإعطاء ReCAPTCHA وقت كافي
       );
     } catch (e) {
       onError('حدث خطأ: ${e.toString()}');

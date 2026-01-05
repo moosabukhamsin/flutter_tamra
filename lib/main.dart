@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
+// Temporarily disabled for ReCAPTCHA testing
+// import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:provider/provider.dart';
 import 'app_router.dart';
 import 'l10n/app_localizations.dart';
@@ -26,16 +27,19 @@ void main() async {
   }
   
   // Initialize Firebase App Check
+  // TEMPORARILY DISABLED FOR TESTING - ReCAPTCHA may close too quickly with App Check enabled
+  // Uncomment after verifying ReCAPTCHA works correctly
   try {
-    await FirebaseAppCheck.instance.activate(
-      // For iOS/macOS - use Device Check (or App Attest for iOS 14+)
-      appleProvider: AppleProvider.deviceCheck,
-      // For Android - use Play Integrity (or debug for development)
-      androidProvider: AndroidProvider.debug, // Change to AndroidProvider.playIntegrity for production
-      // For Web - use reCAPTCHA v3 (optional, only if you have web app)
-      // webProvider: ReCaptchaV3Provider('your-recaptcha-site-key'),
-    );
-    print('✅ Firebase App Check activated');
+    // await FirebaseAppCheck.instance.activate(
+    //   // For iOS/macOS - use Device Check (or App Attest for iOS 14+)
+    //   appleProvider: AppleProvider.deviceCheck,
+    //   // For Android - use Play Integrity (or debug for development)
+    //   androidProvider: AndroidProvider.debug, // Change to AndroidProvider.playIntegrity for production
+    //   // For Web - use reCAPTCHA v3 (optional, only if you have web app)
+    //   // webProvider: ReCaptchaV3Provider('your-recaptcha-site-key'),
+    // );
+    // print('✅ Firebase App Check activated');
+    print('⚠️  Firebase App Check temporarily disabled for ReCAPTCHA testing');
   } catch (e) {
     print('⚠️  Firebase App Check activation failed: $e');
     // Continue without App Check if it fails
