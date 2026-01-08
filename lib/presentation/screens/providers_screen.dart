@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:tamra/presentation/screens/Provider_screen.dart';
 import 'package:tamra/services/vendors_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tamra/constants/app_colors.dart';
 
 class ProvidersScreen extends StatefulWidget {
   const ProvidersScreen({Key? key}) : super(key: key);
@@ -25,14 +26,14 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
-        statusBarColor: Colors.white,
+        statusBarColor: AppColors.background,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.white,
+        systemNavigationBarColor: AppColors.background,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background,
         body: SafeArea(
           child: Directionality(
             textDirection: TextDirection.rtl,
@@ -42,7 +43,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
               Container(
                 padding: EdgeInsets.symmetric(horizontal: 15, vertical: 20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.background,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.grey.withOpacity(0.1),
@@ -63,7 +64,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: Color(0XFF3D3D3D),
+                            color: AppColors.textPrimary,
                             fontFamily: 'IBMPlex',
                           ),
                         ),
@@ -76,24 +77,24 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(15.0),
-                          borderSide: BorderSide(color: Color(0XFFD1D1D1)),
+                          borderSide: BorderSide(color: AppColors.borderLight),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(15.0),
-                          borderSide: BorderSide(color: Color(0XFFD1D1D1)),
+                          borderSide: BorderSide(color: AppColors.borderLight),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(15.0),
-                          borderSide: BorderSide(color: Color(0XFF7C3425), width: 2),
+                          borderSide: BorderSide(color: AppColors.primary, width: 2),
                         ),
-                        prefixIcon: Icon(Icons.search, color: Color(0XFF707070)),
+                        prefixIcon: Icon(Icons.search, color: AppColors.textSecondary),
                         hintText: 'ابحث عن مورد...',
                         hintStyle: TextStyle(
-                          color: Color(0XFF909090),
+                          color: AppColors.textPlaceholder,
                           fontFamily: 'IBMPlex',
                         ),
                         filled: true,
-                        fillColor: Color(0XFFF4F6F9),
+                        fillColor: AppColors.backgroundLight,
                         contentPadding: EdgeInsets.symmetric(horizontal: 15, vertical: 12),
                       ),
                       onChanged: (value) {
@@ -107,20 +108,30 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
               ),
               // Vendors List
               Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: _vendorsService.getAllVendors(),
-                  builder: (context, snapshot) {
-                    return AnimatedSwitcher(
-                      duration: Duration(milliseconds: 300),
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        return FadeTransition(
-                          opacity: animation,
-                          child: child,
-                        );
-                      },
-                      child: _buildVendorsContent(snapshot),
-                    );
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    // تحديث البيانات عن طريق إعادة بناء StreamBuilder
+                    setState(() {});
+                    // انتظار قصير لإظهار تأثير السحب
+                    await Future.delayed(Duration(milliseconds: 500));
                   },
+                  color: AppColors.primary,
+                  backgroundColor: AppColors.background,
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: _vendorsService.getAllVendors(),
+                    builder: (context, snapshot) {
+                      return AnimatedSwitcher(
+                        duration: Duration(milliseconds: 300),
+                        transitionBuilder: (Widget child, Animation<double> animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          );
+                        },
+                        child: _buildVendorsContent(snapshot),
+                      );
+                    },
+                  ),
                 ),
               ),
             ],
@@ -145,7 +156,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
           ),
         ],
         border: Border.all(
-          color: Color(0XFFE5E5E5),
+          color: AppColors.borderWhite,
           width: 1,
         ),
       ),
@@ -157,7 +168,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
             height: 100,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Color(0XFFE0E0E0),
+              color: AppColors.borderGray,
             ),
           ),
           SizedBox(height: 15),
@@ -167,14 +178,14 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
             margin: EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),
-              color: Color(0XFFE0E0E0),
+              color: AppColors.borderGray,
             ),
           ),
           SizedBox(height: 8),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Color(0XFFE0E0E0),
+              color: AppColors.borderGray,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Container(
@@ -226,7 +237,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
             Icon(
               isNetworkError ? Icons.wifi_off : Icons.error_outline,
               size: 80,
-              color: Color(0XFFD1D1D1),
+              color: AppColors.borderLight,
             ),
             SizedBox(height: 20),
             Text(
@@ -235,7 +246,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
                 : 'حدث خطأ في تحميل البيانات',
               style: TextStyle(
                 fontSize: 20,
-                color: Color(0XFF5B5B5B),
+                color: AppColors.textMedium,
                 fontFamily: 'IBMPlex',
                 fontWeight: FontWeight.w600,
               ),
@@ -248,7 +259,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
-                color: Color(0XFF909090),
+                color: AppColors.textPlaceholder,
                 fontFamily: 'IBMPlex',
               ),
             ),
@@ -262,7 +273,7 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
               icon: Icon(Icons.refresh),
               label: Text('إعادة المحاولة'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0XFF7C3425),
+                backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
                 shape: RoundedRectangleBorder(
@@ -284,14 +295,14 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
             Icon(
               Icons.store_outlined,
               size: 80,
-              color: Color(0XFFD1D1D1),
+              color: AppColors.borderLight,
             ),
             SizedBox(height: 20),
             Text(
               'لا يوجد موردين',
               style: TextStyle(
                 fontSize: 20,
-                color: Color(0XFF5B5B5B),
+                color: AppColors.textMedium,
                 fontFamily: 'IBMPlex',
               ),
             ),
@@ -324,14 +335,14 @@ class _ProvidersScreenState extends State<ProvidersScreen> {
             Icon(
               Icons.search_off,
               size: 80,
-              color: Color(0XFFD1D1D1),
+              color: AppColors.borderLight,
             ),
             SizedBox(height: 20),
             Text(
               'لا توجد نتائج للبحث',
               style: TextStyle(
                 fontSize: 20,
-                color: Color(0XFF5B5B5B),
+                color: AppColors.textMedium,
                 fontFamily: 'IBMPlex',
               ),
             ),
@@ -411,7 +422,7 @@ class _VendorCard extends StatelessWidget {
           ),
         ],
         border: Border.all(
-          color: Color(0XFFE5E5E5),
+          color: AppColors.borderWhite,
           width: 1,
         ),
       ),
@@ -423,7 +434,7 @@ class _VendorCard extends StatelessWidget {
             height: 100,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Color(0XFFE0E0E0),
+              color: AppColors.borderGray,
             ),
           ),
           SizedBox(height: 15),
@@ -433,14 +444,14 @@ class _VendorCard extends StatelessWidget {
             margin: EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),
-              color: Color(0XFFE0E0E0),
+              color: AppColors.borderGray,
             ),
           ),
           SizedBox(height: 8),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Color(0XFFE0E0E0),
+              color: AppColors.borderGray,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Container(
@@ -485,7 +496,7 @@ class _VendorCard extends StatelessWidget {
                 ),
               ],
               border: Border.all(
-                color: Color(0XFFE5E5E5),
+                color: AppColors.borderWhite,
                 width: 1,
               ),
             ),
@@ -499,7 +510,7 @@ class _VendorCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: Color(0XFF7C3425).withOpacity(0.2),
+                      color: AppColors.primary.withOpacity(0.2),
                       width: 2,
                     ),
                   ),
@@ -534,7 +545,7 @@ class _VendorCard extends StatelessWidget {
                   child: Text(
                     vendorName,
                     style: TextStyle(
-                      color: Color(0XFF3D3D3D),
+                      color: AppColors.textPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'IBMPlex',
@@ -549,7 +560,7 @@ class _VendorCard extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Color(0XFF7C3425).withOpacity(0.1),
+                    color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -558,13 +569,13 @@ class _VendorCard extends StatelessWidget {
                       Icon(
                         Icons.inventory_2_outlined,
                         size: 16,
-                        color: Color(0XFF7C3425),
+                        color: AppColors.primary,
                       ),
                       SizedBox(width: 5),
                       Text(
                         '$count منتج',
                         style: TextStyle(
-                          color: Color(0XFF7C3425),
+                          color: AppColors.primary,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           fontFamily: 'IBMPlex',

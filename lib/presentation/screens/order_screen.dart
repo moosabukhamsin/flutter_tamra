@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tamra/presentation/widgets/custom_gradient_divider.dart';
 import 'package:tamra/services/orders_service.dart';
+import 'package:tamra/constants/app_colors.dart';
 
 class OrderScreen extends StatefulWidget {
   final String orderId;
@@ -18,11 +19,9 @@ class _OrderScreenState extends State<OrderScreen> {
   void initState() {
     super.initState();
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
+      SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.white,
+        systemNavigationBarColor: AppColors.background,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
     );
@@ -56,24 +55,28 @@ class _OrderScreenState extends State<OrderScreen> {
   // Helper widget to display price with riyal symbol
   Widget _buildPriceWithSymbol(BuildContext context, double price,
       {double? fontSize, FontWeight? fontWeight, Color? color}) {
-    final effectiveFontSize = fontSize ?? 18.0;
+    final effectiveFontSize = fontSize ?? 17.0;
     final effectiveFontWeight = fontWeight ?? FontWeight.w600;
-    final effectiveColor = color ?? Color(0XFF3D3D3D);
-    final symbolSize = effectiveFontSize * 1.0;
+    final effectiveColor = color ?? AppColors.primary;
+    final symbolSize = effectiveFontSize * 0.9;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          price.toStringAsFixed(2),
-          style: TextStyle(
-            color: effectiveColor,
-            fontSize: effectiveFontSize,
-            fontWeight: effectiveFontWeight,
+        Flexible(
+          child: Text(
+            price.toStringAsFixed(2),
+            style: TextStyle(
+              color: effectiveColor,
+              fontSize: effectiveFontSize,
+              fontWeight: effectiveFontWeight,
+              fontFamily: 'IBMPlex',
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        SizedBox(width: 4),
+        SizedBox(width: 3),
         Image.asset(
           'assets/images/riyal_symbol.png',
           width: symbolSize,
@@ -87,25 +90,21 @@ class _OrderScreenState extends State<OrderScreen> {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
+      SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.white,
+        systemNavigationBarColor: AppColors.background,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
     );
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.white,
+        systemNavigationBarColor: AppColors.background,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background,
         resizeToAvoidBottomInset: false,
         appBar: AppBar(
           bottomOpacity: 0.0,
@@ -118,23 +117,31 @@ class _OrderScreenState extends State<OrderScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(width: 20),
-              InkWell(
-                onTap: () {
-                  Navigator.pop(context);
-                },
-                child: Icon(
-                  color: Color(0XFF575757),
-                  Icons.arrow_back,
-                  size: 30.0,
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.pop(context);
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Icon(
+                    color: AppColors.iconColor,
+                    Icons.arrow_back_rounded,
+                    size: 28.0,
+                  ),
                 ),
               ),
               SizedBox(width: 20),
-              Text('حالة الطلب',
-                  style: TextStyle(
-                    color: Color(0XFF3D3D3D),
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  )),
+              Text(
+                'حالة الطلب',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'IBMPlex',
+                ),
+              ),
             ],
           ),
         ),
@@ -281,8 +288,43 @@ class _OrderScreenState extends State<OrderScreen> {
             if (snapshot.hasError ||
                 !snapshot.hasData ||
                 !snapshot.data!.exists) {
-              return Center(
-                child: Text('حدث خطأ في جلب بيانات الطلب'),
+              return Directionality(
+                textDirection: TextDirection.rtl,
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 80,
+                          color: AppColors.borderLight,
+                        ),
+                        SizedBox(height: 20),
+                        Text(
+                          'حدث خطأ',
+                          style: TextStyle(
+                            color: AppColors.textMedium,
+                            fontSize: 20,
+                            fontFamily: 'IBMPlex',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'حدث خطأ في جلب بيانات الطلب',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.textPlaceholder,
+                            fontSize: 14,
+                            fontFamily: 'IBMPlex',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               );
             }
 
@@ -301,46 +343,79 @@ class _OrderScreenState extends State<OrderScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 20),
                 child: ListView(
                   children: [
+                    SizedBox(height: 10),
                     Container(
                       alignment: Alignment.center,
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 60, vertical: 60),
+                      padding: EdgeInsets.symmetric(horizontal: 30, vertical: 40),
                       decoration: BoxDecoration(
-                        color: Color(0XFFF4F6F9),
+                        color: status == 'delivered'
+                            ? Colors.green.withOpacity(0.1)
+                            : status == 'cancelled'
+                                ? Colors.red.withOpacity(0.1)
+                                : AppColors.primary.withOpacity(0.08),
                         borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: status == 'delivered'
+                              ? Colors.green.withOpacity(0.2)
+                              : status == 'cancelled'
+                                  ? Colors.red.withOpacity(0.2)
+                                  : AppColors.primary.withOpacity(0.15),
+                          width: 1.5,
+                        ),
                       ),
                       child: Column(
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                status == 'delivered'
-                                    ? Icons.check_circle_rounded
-                                    : status == 'cancelled'
-                                        ? Icons.cancel
-                                        : Icons.pending,
-                                color: Color(0XFF7C3425),
-                                size: 30,
-                              ),
-                              SizedBox(width: 10),
-                              Text(
-                                _getStatusLabel(status),
-                                style: TextStyle(
-                                  color: Color(0XFF2E2E2E),
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
+                          Container(
+                            padding: EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: status == 'delivered'
+                                  ? Colors.green
+                                  : status == 'cancelled'
+                                      ? Colors.red
+                                      : AppColors.primary,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (status == 'delivered'
+                                          ? Colors.green
+                                          : status == 'cancelled'
+                                              ? Colors.red
+                                              : AppColors.primary)
+                                      .withOpacity(0.3),
+                                  spreadRadius: 0,
+                                  blurRadius: 12,
+                                  offset: Offset(0, 4),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            child: Icon(
+                              status == 'delivered'
+                                  ? Icons.check_circle_rounded
+                                  : status == 'cancelled'
+                                      ? Icons.cancel_rounded
+                                      : Icons.pending_rounded,
+                              color: Colors.white,
+                              size: 48,
+                            ),
                           ),
-                          SizedBox(height: 10),
+                          SizedBox(height: 20),
+                          Text(
+                            _getStatusLabel(status),
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'IBMPlex',
+                            ),
+                          ),
+                          SizedBox(height: 12),
                           Text(
                             _formatDate(createdAt),
                             style: TextStyle(
-                              color: Color(0XFF888888),
-                              fontSize: 18,
+                              color: AppColors.textSecondary,
+                              fontSize: 16,
                               fontWeight: FontWeight.w500,
+                              fontFamily: 'IBMPlex',
                             ),
                           ),
                         ],
@@ -363,30 +438,56 @@ class _OrderScreenState extends State<OrderScreen> {
                             vendorName = data?['businessName'] ?? 'البائع';
                           }
                           return Container(
-                            alignment: Alignment.center,
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 20),
+                            padding: EdgeInsets.all(18),
                             decoration: BoxDecoration(
-                              color: Color(0XFFF4F6F9),
-                              borderRadius: BorderRadius.circular(20),
+                              color: AppColors.backgroundLight,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: AppColors.borderLight.withOpacity(0.5),
+                                width: 1,
+                              ),
                             ),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
                               children: [
-                                Icon(
-                                  Icons.location_on_outlined,
-                                  color: Color(0XFF6C7B8A),
-                                  size: 30,
+                                Container(
+                                  padding: EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    Icons.store_rounded,
+                                    color: AppColors.primary,
+                                    size: 26,
+                                  ),
                                 ),
-                                SizedBox(width: 10),
+                                SizedBox(width: 14),
                                 Expanded(
-                                  child: Text(
-                                    vendorName,
-                                    style: TextStyle(
-                                      color: Color(0XFF7C3425),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'البائع',
+                                        style: TextStyle(
+                                          color: AppColors.textPlaceholder,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'IBMPlex',
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        vendorName,
+                                        style: TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          fontFamily: 'IBMPlex',
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
@@ -394,21 +495,22 @@ class _OrderScreenState extends State<OrderScreen> {
                           );
                         },
                       ),
-                    SizedBox(height: 20),
+                    SizedBox(height: 28),
                     Row(
                       children: [
-                        Text('الاصناف',
-                            style: TextStyle(
-                              color: Color(0XFF3D3D3D),
-                              fontSize: 20,
-                              fontWeight: FontWeight.w600,
-                            )),
+                        Text(
+                          'الأصناف',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'IBMPlex',
+                          ),
+                        ),
                       ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10.0),
-                      child: CustomGradientDivider(),
-                    ),
+                    SizedBox(height: 12),
+                    CustomGradientDivider(),
                     ...items.map<Widget>((item) {
                       final itemMap = item as Map<String, dynamic>;
                       final nameAr = itemMap['nameAr'] ?? '';
@@ -420,141 +522,242 @@ class _OrderScreenState extends State<OrderScreen> {
 
                       return Column(
                         children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  nameAr,
-                                  style: TextStyle(
-                                    color: Color(0XFF3D3D3D),
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w500,
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        nameAr,
+                                        style: TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          fontFamily: 'IBMPlex',
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (packagingWeight.isNotEmpty) ...[
+                                        SizedBox(height: 4),
+                                        Text(
+                                          packagingWeight,
+                                          style: TextStyle(
+                                            color: AppColors.textPlaceholder,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            fontFamily: 'IBMPlex',
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
-                              ),
-                              Expanded(
-                                child: Column(
+                                SizedBox(width: 12),
+                                Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    if (packagingWeight.isNotEmpty)
-                                      Text(
-                                        '$quantity x $packagingWeight',
-                                        style: TextStyle(
-                                          color: Color(0XFF3D3D3D),
-                                          fontSize: 17,
-                                          fontWeight: FontWeight.w500,
-                                        ),
+                                    Text(
+                                      'الكمية: $quantity',
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'IBMPlex',
                                       ),
-                                    _buildPriceWithSymbol(
-                                      context,
-                                      itemTotal,
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    SizedBox(height: 6),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'سعر الوحدة: ',
+                                          style: TextStyle(
+                                            color: AppColors.textPlaceholder,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            fontFamily: 'IBMPlex',
+                                          ),
+                                        ),
+                                        _buildPriceWithSymbol(
+                                          context,
+                                          price,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 8),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'الإجمالي: ',
+                                          style: TextStyle(
+                                            color: AppColors.textPrimary,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: 'IBMPlex',
+                                          ),
+                                        ),
+                                        _buildPriceWithSymbol(
+                                          context,
+                                          itemTotal,
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.primary,
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              )
-                            ],
+                              ],
+                            ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 10.0),
-                            child: CustomGradientDivider(),
-                          ),
+                          CustomGradientDivider(),
                         ],
                       );
                     }).toList(),
-                    Row(
-                      children: [
-                        Text('التوصيل',
-                            style: TextStyle(
-                              color: Color(0XFF3D3D3D),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            )),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              _buildPriceWithSymbol(
-                                context,
-                                deliveryFee,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ],
-                          ),
-                        )
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        Text('الاجمالي',
-                            style: TextStyle(
-                              color: Color(0XFF3D3D3D),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            )),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              _buildPriceWithSymbol(
-                                context,
-                                total,
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0XFF7C3425),
-                              ),
-                            ],
-                          ),
-                        )
-                      ],
-                    ),
-                    SizedBox(height: 20),
-                    if (status == 'delivered')
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                    SizedBox(height: 16),
+                    Container(
+                      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundLight,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
                         children: [
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              backgroundColor: Color(0Xff7C3425),
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 30, vertical: 8),
-                              shape: const RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(25)),
-                              ),
-                            ),
-                            onPressed: () {
-                              // TODO: إعادة الطلب
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('ميزة إعادة الطلب قريباً'),
-                                  backgroundColor: Colors.orange,
-                                ),
-                              );
-                            },
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              textDirection: TextDirection.rtl,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text('اعادة هذا الطلب',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                    )),
-                                SizedBox(width: 5),
-                                Icon(
-                                  color: Colors.white,
-                                  Icons.arrow_forward_ios,
-                                  size: 18.0,
+                                Text(
+                                  'التوصيل',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'IBMPlex',
+                                  ),
+                                ),
+                                _buildPriceWithSymbol(
+                                  context,
+                                  deliveryFee,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 12),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'الإجمالي',
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    fontFamily: 'IBMPlex',
+                                  ),
+                                ),
+                                _buildPriceWithSymbol(
+                                  context,
+                                  total,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
                                 ),
                               ],
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                    SizedBox(height: 32),
+                    if (status == 'delivered')
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 40,
+                              vertical: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
+                          ),
+                          onPressed: () {
+                            HapticFeedback.mediumImpact();
+                            // TODO: إعادة الطلب
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                    SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'ميزة إعادة الطلب قريباً',
+                                        style: TextStyle(
+                                          fontFamily: 'IBMPlex',
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                backgroundColor: Colors.orange,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                margin: EdgeInsets.all(16),
+                              ),
+                            );
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            textDirection: TextDirection.rtl,
+                            children: [
+                              Icon(
+                                Icons.replay_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                'إعادة هذا الطلب',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  fontFamily: 'IBMPlex',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                   ],
                 ),

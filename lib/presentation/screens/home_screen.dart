@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:tamra/presentation/screens/Provider_screen.dart';
+import 'package:tamra/presentation/screens/add_address_screen.dart';
 import 'package:tamra/services/client_products_service.dart';
 import 'package:tamra/services/vendors_service.dart';
 import 'package:tamra/services/addresses_service.dart';
@@ -8,6 +11,7 @@ import 'package:tamra/providers/cart_provider.dart';
 import 'package:tamra/models/cart_item.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tamra/presentation/widgets/custom_gradient_divider.dart';
+import 'package:tamra/constants/app_colors.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -20,19 +24,23 @@ class _HomeScreenState extends State<HomeScreen> {
   final VendorsService _vendorsService = VendorsService();
   final AddressesService _addressesService = AddressesService();
   final TextEditingController _searchController = TextEditingController();
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
   int _selected = 0; // 0 = الكل، 1 = فواكه، 2 = خضار، إلخ
   String? _selectedCategory;
   String? _selectedAddressId;
+  String _searchQuery = '';
   int _productsLoadingKey = 0;
+  Timer? _searchDebounceTimer;
 
   @override
   void dispose() {
     _searchController.dispose();
+    _searchDebounceTimer?.cancel();
     super.dispose();
   }
 
   void _updateQuantity(
-      String productId, int delta, Map<String, dynamic> product) {
+      String productId, int delta, Map<String, dynamic> product) async {
     // إضافة/تحديث المنتج في السلة مباشرة
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
     final cartItem = cartProvider.cart.getItem(productId);
@@ -42,9 +50,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (newQuantity > 0) {
       // إذا كان المنتج موجود بالفعل، استخدم updateQuantity
       if (cartItem != null) {
+        HapticFeedback.selectionClick();
         cartProvider.updateQuantity(productId, newQuantity);
       } else {
         // إذا كان المنتج غير موجود، أضفه جديد
+        HapticFeedback.mediumImpact();
         final newItem = CartItem(
           productId: productId,
           nameAr: product['nameAr'] ?? '',
@@ -56,9 +66,103 @@ class _HomeScreenState extends State<HomeScreen> {
           quantity: newQuantity,
         );
         cartProvider.addItem(newItem);
+        // رسالة نجاح عند الإضافة
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'تمت إضافة ${product['nameAr'] ?? 'المنتج'} إلى السلة',
+                    style: TextStyle(fontFamily: 'IBMPlex'),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: EdgeInsets.all(16),
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     } else {
-      cartProvider.removeItem(productId);
+      // طلب تأكيد قبل الحذف إذا كانت الكمية الحالية > 0
+      if (currentQuantity > 0) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Row(
+                children: [
+                  Icon(Icons.delete_outline, color: Colors.red, size: 24),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'حذف المنتج',
+                      style: TextStyle(
+                        fontFamily: 'IBMPlex',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                'هل أنت متأكد من حذف ${product['nameAr'] ?? 'هذا المنتج'} من السلة؟',
+                style: TextStyle(
+                  fontFamily: 'IBMPlex',
+                  fontSize: 16,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(
+                    'إلغاء',
+                    style: TextStyle(
+                      fontFamily: 'IBMPlex',
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    Navigator.of(context).pop(true);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'حذف',
+                    style: TextStyle(fontFamily: 'IBMPlex'),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+
+        if (confirmed == true) {
+          cartProvider.removeItem(productId);
+        }
+      } else {
+        cartProvider.removeItem(productId);
+      }
     }
   }
 
@@ -107,11 +211,11 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected ? Color(0XFF7C3425) : Color(0XFFD1D1D1),
+              color: isSelected ? AppColors.primary : AppColors.borderLight,
               width: borderWidth,
               style: BorderStyle.solid,
             ),
-            color: isSelected ? Color(0XFF7C3425) : Colors.white,
+            color: isSelected ? AppColors.primary : AppColors.background,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -124,8 +228,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 categoryName,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Color(0XFF909090),
+                  color: isSelected ? Colors.white : AppColors.textPlaceholder,
                   fontSize: 18,
+                  fontFamily: 'IBMPlex',
                 ),
               ),
               if (isSelected) ...[
@@ -173,13 +278,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 120,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(4),
-                  color: Color(0XFFE0E0E0),
+                  color: AppColors.borderGray,
                 ),
               ),
             ),
             SizedBox(width: 8),
             Icon(
-              color: Color(0XFF1EB7CD),
+              color: AppColors.accentBlue,
               Icons.keyboard_arrow_down,
               size: 25.0,
             ),
@@ -195,27 +300,115 @@ class _HomeScreenState extends State<HomeScreen> {
             error.toString().contains('SocketException') ||
             error.toString().contains('Failed host lookup');
 
-        return Text(
-          key: ValueKey('address_error'),
-          isNetworkError ? 'لا يوجد اتصال' : 'لا توجد عناوين',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: isNetworkError ? Colors.red : Color(0XFF7C3425),
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: isNetworkError ? null : () async {
+              HapticFeedback.lightImpact();
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddAddressScreen(),
+                ),
+              );
+              // إعادة تحميل العناوين بعد العودة
+              if (result == true && mounted) {
+                setState(() {});
+              }
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: isNetworkError ? null : Border.all(
+                  color: AppColors.primary.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isNetworkError ? Icons.wifi_off : Icons.add_location_alt_outlined,
+                    size: 16,
+                    color: isNetworkError ? Colors.red : AppColors.primary,
+                  ),
+                  SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      key: ValueKey('address_error'),
+                      isNetworkError ? 'لا يوجد اتصال' : 'أضف عنوان التوصيل',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: isNetworkError ? Colors.red : AppColors.primary,
+                        fontFamily: 'IBMPlex',
+                        fontSize: 14,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          overflow: TextOverflow.ellipsis,
         );
       }
     }
 
     if (snapshot.hasData && snapshot.data!.docs.isEmpty) {
-      return Text(
-        key: ValueKey('address_empty'),
-        'لا توجد عناوين',
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          color: Color(0XFF7C3425),
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            HapticFeedback.lightImpact();
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AddAddressScreen(),
+              ),
+            );
+            // إعادة تحميل العناوين بعد العودة
+            if (result == true && mounted) {
+              setState(() {});
+            }
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.3),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.add_location_alt_outlined,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+                SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    key: ValueKey('address_empty'),
+                    'أضف عنوان التوصيل',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                      fontFamily: 'IBMPlex',
+                      fontSize: 14,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-        overflow: TextOverflow.ellipsis,
       );
     }
 
@@ -256,7 +449,7 @@ class _HomeScreenState extends State<HomeScreen> {
         underline: SizedBox.shrink(),
         isExpanded: true,
         icon: Icon(
-          color: Color(0XFF1EB7CD),
+          color: AppColors.accentBlue,
           Icons.keyboard_arrow_down,
           size: 25.0,
         ),
@@ -271,7 +464,8 @@ class _HomeScreenState extends State<HomeScreen> {
               addressName,
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Color(0XFF7C3425),
+                color: AppColors.primary,
+                fontFamily: 'IBMPlex',
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -308,7 +502,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       height: 90,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
-                        color: Color(0XFFE0E0E0),
+                        color: AppColors.borderGray,
                       ),
                     ),
                   );
@@ -358,12 +552,24 @@ class _HomeScreenState extends State<HomeScreen> {
         key: ValueKey('vendors_empty'),
         height: 90,
         child: Center(
-          child: Text(
-            'لا يوجد موردين',
-            style: TextStyle(
-              color: Color(0XFF5B5B5B),
-              fontSize: 14,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.store_outlined,
+                size: 32,
+                color: AppColors.borderLight,
+              ),
+              SizedBox(height: 8),
+              Text(
+                'لا يوجد موردين',
+                style: TextStyle(
+                  color: AppColors.textMedium,
+                  fontSize: 14,
+                  fontFamily: 'IBMPlex',
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -466,27 +672,48 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
-              SizedBox(height: 10),
-              Row(
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        color: Color(0XFF707070),
-                        Icons.location_on_outlined,
-                        size: 25.0,
-                      ),
-                      SizedBox(width: 5),
-                      Text(
-                        'التوصيل الى',
-                        style: TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                    ],
+              SizedBox(height: 12),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.backgroundLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.borderLight.withOpacity(0.5),
+                    width: 1,
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: Row(
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.accentBlue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.location_on_outlined,
+                            color: AppColors.accentBlue,
+                            size: 20.0,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'التوصيل إلى',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'IBMPlex',
+                            color: AppColors.textPrimary,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
                       child: StreamBuilder<QuerySnapshot>(
                         stream: _addressesService.getClientAddresses(),
                         builder: (context, snapshot) {
@@ -497,23 +724,44 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
                     ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        color: Color(0XFF707070),
-                        Icons.access_time,
-                        size: 15.0,
-                      ),
-                      SizedBox(width: 5),
-                      Text('4 ساعة'),
-                    ],
-                  ),
-                ],
+                    SizedBox(width: 8),
+                    // TODO: إعادة تفعيل وقت التوصيل عند الحاجة
+                    // Container(
+                    //   padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    //   decoration: BoxDecoration(
+                    //     color: AppColors.primary.withOpacity(0.1),
+                    //     borderRadius: BorderRadius.circular(8),
+                    //     border: Border.all(
+                    //       color: AppColors.primary.withOpacity(0.2),
+                    //       width: 1,
+                    //     ),
+                    //   ),
+                    //   child: Row(
+                    //     mainAxisSize: MainAxisSize.min,
+                    //     children: [
+                    //       Icon(
+                    //         Icons.access_time_rounded,
+                    //         size: 16.0,
+                    //         color: AppColors.primary,
+                    //       ),
+                    //       SizedBox(width: 6),
+                    //       Text(
+                    //         '4 ساعة',
+                    //         style: TextStyle(
+                    //           color: AppColors.primary,
+                    //           fontSize: 13,
+                    //           fontWeight: FontWeight.w600,
+                    //           fontFamily: 'IBMPlex',
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                  ],
+                ),
               ),
               SizedBox(
-                height: 10,
+                height: 15,
               ),
               Row(
                 children: [
@@ -524,22 +772,89 @@ class _HomeScreenState extends State<HomeScreen> {
                         controller: _searchController,
                         decoration: InputDecoration(
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10.0),
+                            borderRadius: BorderRadius.circular(12.0),
+                            borderSide: BorderSide(
+                              color: AppColors.borderLight,
+                              width: 1,
+                            ),
                           ),
-                          prefixIcon: Icon(Icons.search),
-                          hintText: 'البحث عن منتج',
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                            borderSide: BorderSide(
+                              color: AppColors.borderLight,
+                              width: 1,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                            borderSide: BorderSide(
+                              color: AppColors.primary,
+                              width: 2,
+                            ),
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: _searchQuery.isNotEmpty 
+                                ? AppColors.primary 
+                                : AppColors.textPlaceholder,
+                          ),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.clear,
+                                    color: AppColors.textPlaceholder,
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _searchQuery = '';
+                                    });
+                                    HapticFeedback.lightImpact();
+                                  },
+                                )
+                              : null,
+                          hintText: 'البحث عن منتج...',
+                          hintStyle: TextStyle(
+                            color: AppColors.textPlaceholder,
+                            fontFamily: 'IBMPlex',
+                          ),
+                          filled: true,
+                          fillColor: AppColors.backgroundLight,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                        style: TextStyle(
+                          fontFamily: 'IBMPlex',
+                          fontSize: 16,
+                          color: AppColors.textPrimary,
                         ),
                         onChanged: (value) {
-                          // يمكن إضافة وظيفة البحث هنا لاحقاً
+                          // Debounce البحث لتقليل عدد الطلبات
+                          _searchDebounceTimer?.cancel();
+                          _searchDebounceTimer = Timer(Duration(milliseconds: 500), () {
+                            if (mounted) {
+                              setState(() {
+                                _searchQuery = value.trim();
+                              });
+                            }
+                          });
+                        },
+                        onSubmitted: (value) {
+                          setState(() {
+                            _searchQuery = value.trim();
+                          });
                         },
                       ),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 10),
+              SizedBox(height: 15),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
@@ -575,10 +890,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                            color: Color(0XFFD1D1D1),
+                            color: AppColors.borderLight,
                             width: 1.0,
                             style: BorderStyle.solid),
-                        color: Colors.white,
+                        color: AppColors.background,
                       ),
                       child: Row(children: [
                         Image.asset('assets/images/ic_cat_4.png', height: 30),
@@ -587,8 +902,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         Text('حمضيات',
                             style: TextStyle(
-                              color: Color(0XFF909090),
+                              color: AppColors.textPlaceholder,
                               fontSize: 18,
+                              fontFamily: 'IBMPlex',
                             )),
                       ]),
                     ),
@@ -600,7 +916,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     //   decoration: BoxDecoration(
                     //     borderRadius: BorderRadius.circular(20),
                     //     border: Border.all(
-                    //         color: Color(0XFFD1D1D1),
+                    //         color: AppColors.borderLight,
                     //         width: 1.0,
                     //         style: BorderStyle.solid),
                     //     color: Colors.white,
@@ -612,7 +928,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     //     ),
                     //     Text('استوائة',
                     //         style: TextStyle(
-                    //           color: Color(0XFF909090),
+                    //           color: AppColors.textPlaceholder,
                     //           fontSize: 18,
                     //         )),
                     //   ]),
@@ -625,7 +941,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     //   decoration: BoxDecoration(
                     //     borderRadius: BorderRadius.circular(20),
                     //     border: Border.all(
-                    //         color: Color(0XFFD1D1D1),
+                    //         color: AppColors.borderLight,
                     //         width: 1.0,
                     //         style: BorderStyle.solid),
                     //     color: Colors.white,
@@ -637,7 +953,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     //     ),
                     //     Text('محليه',
                     //         style: TextStyle(
-                    //           color: Color(0XFF909090),
+                    //           color: AppColors.textPlaceholder,
                     //           fontSize: 18,
                     //         )),
                     //   ]),
@@ -649,16 +965,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 height: 20,
               ),
               Expanded(
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: _productsService.getAllActiveProducts(
-                    category: _selectedCategory,
-                  ),
-                  builder: (context, snapshot) {
-                    return AnimatedSwitcher(
-                      duration: Duration(milliseconds: 200),
-                      child: _buildProductsContent(snapshot),
-                    );
+                child: RefreshIndicator(
+                  key: _refreshIndicatorKey,
+                  onRefresh: () async {
+                    // تحديث البيانات عن طريق إعادة بناء StreamBuilder
+                    setState(() {
+                      _productsLoadingKey++;
+                    });
+                    // انتظار قصير لإظهار تأثير السحب
+                    await Future.delayed(Duration(milliseconds: 500));
                   },
+                  color: AppColors.primary,
+                  backgroundColor: AppColors.background,
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: _productsService.getAllActiveProducts(
+                      category: _selectedCategory,
+                    ),
+                    builder: (context, snapshot) {
+                      return AnimatedSwitcher(
+                        duration: Duration(milliseconds: 300),
+                        transitionBuilder: (Widget child, Animation<double> animation) {
+                          return FadeTransition(
+                            opacity: animation,
+                            child: child,
+                          );
+                        },
+                        child: _buildProductsContent(snapshot),
+                      );
+                    },
+                  ),
                 ),
               ),
             ],
@@ -693,7 +1028,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             height: 90,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
-                              color: Color(0XFFE0E0E0),
+                              color: AppColors.borderGray,
                             ),
                           ),
                           SizedBox(width: 10),
@@ -706,7 +1041,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   width: 150,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4),
-                                    color: Color(0XFFE0E0E0),
+                                    color: AppColors.borderGray,
                                   ),
                                 ),
                                 SizedBox(height: 8),
@@ -715,7 +1050,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   width: 80,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4),
-                                    color: Color(0XFFE0E0E0),
+                                    color: AppColors.borderGray,
                                   ),
                                 ),
                                 SizedBox(height: 5),
@@ -724,7 +1059,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   width: 100,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4),
-                                    color: Color(0XFFE0E0E0),
+                                    color: AppColors.borderGray,
                                   ),
                                 ),
                               ],
@@ -744,7 +1079,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(50),
-                              color: Color(0XFFeeeeee),
+                              color: AppColors.backgroundGray,
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -754,7 +1089,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   height: 45,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4),
-                                    color: Color(0XFFE0E0E0),
+                                    color: AppColors.borderGray,
                                   ),
                                 ),
                                 SizedBox(width: 10),
@@ -764,11 +1099,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(1),
                                     border: Border.all(
-                                      color: Color(0XFFD1D1D1),
+                                      color: AppColors.borderLight,
                                       width: 1.0,
                                       style: BorderStyle.solid,
                                     ),
-                                    color: Color(0XFFE0E0E0),
+                                    color: AppColors.borderGray,
                                   ),
                                 ),
                                 SizedBox(width: 10),
@@ -777,7 +1112,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   height: 45,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4),
-                                    color: Color(0XFFE0E0E0),
+                                    color: AppColors.borderGray,
                                   ),
                                 ),
                               ],
@@ -811,7 +1146,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(
               isNetworkError ? Icons.wifi_off : Icons.error_outline,
               size: 64,
-              color: Color(0XFFD1D1D1),
+              color: AppColors.borderLight,
             ),
             SizedBox(height: 16),
             Text(
@@ -820,8 +1155,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   : 'حدث خطأ في تحميل المنتجات',
               style: TextStyle(
                 fontSize: 18,
-                color: Color(0XFF5B5B5B),
+                color: AppColors.textMedium,
                 fontWeight: FontWeight.w600,
+                fontFamily: 'IBMPlex',
               ),
             ),
             SizedBox(height: 8),
@@ -832,7 +1168,8 @@ class _HomeScreenState extends State<HomeScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: Color(0XFF909090),
+                color: AppColors.textPlaceholder,
+                fontFamily: 'IBMPlex',
               ),
             ),
           ],
@@ -843,23 +1180,102 @@ class _HomeScreenState extends State<HomeScreen> {
     if (snapshot.data!.docs.isEmpty) {
       return Center(
         key: ValueKey('products_empty'),
-        child: Text(
-          'لا توجد منتجات',
-          style: TextStyle(
-            color: Color(0XFF5B5B5B),
-            fontSize: 18,
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                size: 80,
+                color: AppColors.borderLight,
+              ),
+              SizedBox(height: 20),
+              Text(
+                'لا توجد منتجات',
+                style: TextStyle(
+                  color: AppColors.textMedium,
+                  fontSize: 20,
+                  fontFamily: 'IBMPlex',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                _selectedCategory != null
+                    ? 'لا توجد منتجات في هذه الفئة حالياً'
+                    : 'لا توجد منتجات متاحة حالياً',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textPlaceholder,
+                  fontSize: 14,
+                  fontFamily: 'IBMPlex',
+                ),
+              ),
+            ],
           ),
         ),
       );
     }
 
-    final products = snapshot.data!.docs;
+    var products = snapshot.data!.docs;
+
+    // فلترة المنتجات حسب البحث
+    if (_searchQuery.isNotEmpty) {
+      products = products.where((doc) {
+        final productData = doc.data() as Map<String, dynamic>;
+        final nameAr = (productData['nameAr'] ?? '').toString().toLowerCase();
+        final nameEn = (productData['nameEn'] ?? '').toString().toLowerCase();
+        final searchLower = _searchQuery.toLowerCase();
+        return nameAr.contains(searchLower) || nameEn.contains(searchLower);
+      }).toList();
+    }
+
+    // إذا كانت نتائج البحث فارغة
+    if (_searchQuery.isNotEmpty && products.isEmpty) {
+      return Center(
+        key: ValueKey('products_search_empty_$_searchQuery'),
+        child: Padding(
+          padding: EdgeInsets.all(40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search_off,
+                size: 80,
+                color: AppColors.borderLight,
+              ),
+              SizedBox(height: 20),
+              Text(
+                'لا توجد نتائج',
+                style: TextStyle(
+                  color: AppColors.textMedium,
+                  fontSize: 20,
+                  fontFamily: 'IBMPlex',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'لم يتم العثور على منتجات تطابق "$_searchQuery"',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textPlaceholder,
+                  fontSize: 14,
+                  fontFamily: 'IBMPlex',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Consumer<CartProvider>(
       builder: (context, cartProvider, child) {
         return ListView(
           key: ValueKey(
-              'products_${products.length}_${_selectedCategory ?? 'all'}'),
+              'products_${products.length}_${_selectedCategory ?? 'all'}_$_searchQuery'),
           children: [
             ...products.map((doc) {
               final product = doc.data() as Map<String, dynamic>;
@@ -877,35 +1293,72 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   CustomGradientDivider(),
                   Container(
-                    padding: EdgeInsets.only(top: 15, bottom: 10),
+                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 4),
                     child: Row(
                       children: [
                         Expanded(
                           flex: 1,
                           child: Row(
                             children: [
-                              imageUrl.isNotEmpty
-                                  ? ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.network(
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: imageUrl.isNotEmpty
+                                    ? Image.network(
                                         imageUrl,
-                                        height: 90,
-                                        width: 90,
+                                        height: 100,
+                                        width: 100,
                                         fit: BoxFit.cover,
-                                        errorBuilder:
-                                            (context, error, stackTrace) {
-                                          return Image.asset(
-                                            'assets/images/pr_1.png',
-                                            height: 90,
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return Container(
+                                            height: 100,
+                                            width: 100,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.borderGray,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Center(
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor: AlwaysStoppedAnimation<Color>(
+                                                  AppColors.primary,
+                                                ),
+                                              ),
+                                            ),
                                           );
                                         },
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                          return Container(
+                                            height: 100,
+                                            width: 100,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.backgroundGray,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Image.asset(
+                                              'assets/images/pr_1.png',
+                                              height: 100,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          );
+                                        },
+                                      )
+                                    : Container(
+                                        height: 100,
+                                        width: 100,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.backgroundGray,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Image.asset(
+                                          'assets/images/pr_1.png',
+                                          height: 100,
+                                          fit: BoxFit.cover,
+                                        ),
                                       ),
-                                    )
-                                  : Image.asset(
-                                      'assets/images/pr_1.png',
-                                      height: 90,
-                                    ),
-                              SizedBox(width: 10),
+                              ),
+                              SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -913,29 +1366,46 @@ class _HomeScreenState extends State<HomeScreen> {
                                     Text(
                                       nameAr,
                                       style: TextStyle(
-                                        color: Color(0XFF5B5B5B),
+                                        color: AppColors.textPrimary,
                                         fontSize: 18,
                                         fontWeight: FontWeight.w600,
+                                        fontFamily: 'IBMPlex',
                                       ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    SizedBox(height: 5),
-                                    Text(
-                                      '${price.toStringAsFixed(2)} رس',
-                                      style: TextStyle(
-                                        color: Color(0XFF5B5B5B),
-                                        fontSize: 14,
-                                      ),
+                                    SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          '${price.toStringAsFixed(2)}',
+                                          style: TextStyle(
+                                            color: AppColors.primary,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            fontFamily: 'IBMPlex',
+                                          ),
+                                        ),
+                                        SizedBox(width: 4),
+                                        Image.asset(
+                                          'assets/images/riyal_symbol.png',
+                                          width: 14,
+                                          height: 14,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ],
                                     ),
-                                    if (packagingWeight.isNotEmpty)
+                                    if (packagingWeight.isNotEmpty) ...[
+                                      SizedBox(height: 4),
                                       Text(
                                         packagingWeight,
                                         style: TextStyle(
-                                          color: Color(0XFF5B5B5B),
-                                          fontSize: 14,
+                                          color: AppColors.textPlaceholder,
+                                          fontSize: 13,
+                                          fontFamily: 'IBMPlex',
                                         ),
                                       ),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -951,63 +1421,65 @@ class _HomeScreenState extends State<HomeScreen> {
                               if (quantity == 0)
                                 Flexible(
                                   child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    onTap: () =>
-                                        _updateQuantity(productId, 1, product),
-                                    borderRadius: BorderRadius.circular(25),
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 20,
-                                        vertical: 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(25),
-                                        color: Color(0XFF7C3425),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Color(0XFF7C3425)
-                                                .withOpacity(0.3),
-                                            spreadRadius: 0,
-                                            blurRadius: 8,
-                                            offset: Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.add_shopping_cart,
-                                            color: Colors.white,
-                                            size: 20,
-                                          ),
-                                          SizedBox(width: 6),
-                                          Text(
-                                            'إضافة',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () {
+                                        HapticFeedback.mediumImpact();
+                                        _updateQuantity(productId, 1, product);
+                                      },
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(12),
+                                          color: AppColors.primary,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppColors.primary
+                                                  .withOpacity(0.25),
+                                              spreadRadius: 0,
+                                              blurRadius: 6,
+                                              offset: Offset(0, 3),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.add_shopping_cart_rounded,
+                                              color: Colors.white,
+                                              size: 20,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'إضافة',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                fontFamily: 'IBMPlex',
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
                                   ),
                                 )
                               else
                                 // إذا كانت الكمية أكبر من 0، عرض أزرار + و - و الكمية
-                                Flexible(
-                                  child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 5,
-                                    vertical: 4,
-                                  ),
+                                Container(
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(50),
-                                    color: Color(0XFFeeeeee),
+                                    borderRadius: BorderRadius.circular(12),
+                                    color: AppColors.backgroundLight,
+                                    border: Border.all(
+                                      color: AppColors.primary.withOpacity(0.2),
+                                      width: 1.5,
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -1017,58 +1489,91 @@ class _HomeScreenState extends State<HomeScreen> {
                                       Material(
                                         color: Colors.transparent,
                                         child: InkWell(
-                                          onTap: () => _updateQuantity(
-                                              productId, 1, product),
-                                          borderRadius:
-                                              BorderRadius.circular(25),
-                                          child: Padding(
-                                            padding: EdgeInsets.all(4),
-                                            child: Image.asset(
-                                              'assets/images/add_icon.png',
-                                              height: 45,
+                                          onTap: () {
+                                            HapticFeedback.selectionClick();
+                                            _updateQuantity(productId, 1, product);
+                                          },
+                                          borderRadius: BorderRadius.only(
+                                            topRight: Radius.circular(12),
+                                            bottomRight: Radius.circular(12),
+                                          ),
+                                          child: Container(
+                                            width: 44,
+                                            height: 44,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primary.withOpacity(0.1),
+                                              borderRadius: BorderRadius.only(
+                                                topRight: Radius.circular(12),
+                                                bottomRight: Radius.circular(12),
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              Icons.add_rounded,
+                                              color: AppColors.primary,
+                                              size: 24,
                                             ),
                                           ),
                                         ),
                                       ),
-                                      Flexible(child: SizedBox(width: 10)),
                                       // الكمية في المنتصف
                                       Container(
                                         alignment: Alignment.center,
-                                        width: 50,
-                                        height: 50,
+                                        constraints: BoxConstraints(
+                                          minWidth: 50,
+                                        ),
+                                        padding: EdgeInsets.symmetric(horizontal: 12),
+                                        height: 44,
                                         decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(1),
-                                          border: Border.all(
-                                            color: Color(0XFFD1D1D1),
-                                            width: 1.0,
-                                            style: BorderStyle.solid,
-                                          ),
                                           color: Colors.white,
+                                          border: Border.symmetric(
+                                            vertical: BorderSide(
+                                              color: AppColors.primary.withOpacity(0.1),
+                                              width: 1,
+                                            ),
+                                          ),
                                         ),
                                         child: Text(
                                           quantity.toString(),
                                           style: TextStyle(
-                                            color: Color(0XFF5B5B5B),
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.primary,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                            fontFamily: 'IBMPlex',
                                           ),
                                         ),
                                       ),
-                                      Flexible(child: SizedBox(width: 10)),
-                                      // زر النقصان (على اليسار في RTL)
+                                      // زر النقصان/الحذف (على اليسار في RTL)
                                       Material(
                                         color: Colors.transparent,
                                         child: InkWell(
-                                          onTap: () => _updateQuantity(
-                                              productId, -1, product),
-                                          borderRadius:
-                                              BorderRadius.circular(25),
-                                          child: Padding(
-                                            padding: EdgeInsets.all(4),
-                                            child: Image.asset(
-                                              'assets/images/min_icon.png',
-                                              height: 45,
+                                          onTap: () {
+                                            HapticFeedback.selectionClick();
+                                            _updateQuantity(productId, -1, product);
+                                          },
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: Radius.circular(12),
+                                            bottomLeft: Radius.circular(12),
+                                          ),
+                                          child: Container(
+                                            width: 44,
+                                            height: 44,
+                                            decoration: BoxDecoration(
+                                              color: quantity == 1 
+                                                  ? Colors.red.withOpacity(0.1)
+                                                  : AppColors.primary.withOpacity(0.1),
+                                              borderRadius: BorderRadius.only(
+                                                topLeft: Radius.circular(12),
+                                                bottomLeft: Radius.circular(12),
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              quantity == 1 
+                                                  ? Icons.delete_outline_rounded
+                                                  : Icons.remove_rounded,
+                                              color: quantity == 1 
+                                                  ? Colors.red
+                                                  : AppColors.primary,
+                                              size: 24,
                                             ),
                                           ),
                                         ),
@@ -1076,7 +1581,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ],
                                   ),
                                 ),
-                                  ),
                             ],
                           ),
                         ),

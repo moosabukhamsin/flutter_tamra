@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../constants/app_colors.dart';
 
 class ContactScreen extends StatefulWidget {
   const ContactScreen({Key? key}) : super(key: key);
@@ -43,11 +44,11 @@ class _ContactScreenState extends State<ContactScreen> {
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.white,
+        systemNavigationBarColor: AppColors.background,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background,
         extendBody: false,
         extendBodyBehindAppBar: false,
         resizeToAvoidBottomInset: false,
@@ -61,7 +62,7 @@ class _ContactScreenState extends State<ContactScreen> {
               statusBarColor: Colors.transparent,
               statusBarIconBrightness: Brightness.dark,
               statusBarBrightness: Brightness.light,
-              systemNavigationBarColor: Colors.white,
+              systemNavigationBarColor: AppColors.background,
               systemNavigationBarIconBrightness: Brightness.dark,
             ),
             leading: Row(
@@ -73,7 +74,7 @@ class _ContactScreenState extends State<ContactScreen> {
                     Navigator.pop(context);
                   },
                   child: Icon(
-                    color: Color(0XFF575757),
+                    color: AppColors.iconColor,
                     Icons.arrow_back,
                     size: iconSize,
                   ),
@@ -83,9 +84,10 @@ class _ContactScreenState extends State<ContactScreen> {
                   child: Text(
                     'تواصل معنا',
                     style: TextStyle(
-                      color: Color(0XFF3D3D3D),
+                      color: AppColors.textPrimary,
                       fontSize: titleFontSize,
                       fontWeight: FontWeight.w600,
+                      fontFamily: 'IBMPlex',
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -96,7 +98,7 @@ class _ContactScreenState extends State<ContactScreen> {
           body: SafeArea(
             bottom: true,
             child: Container(
-              color: Colors.white,
+              color: AppColors.background,
               child: Directionality(
                 textDirection: TextDirection.rtl,
                 child: Padding(
@@ -125,7 +127,8 @@ class _ContactScreenState extends State<ContactScreen> {
                               style: TextStyle(
                                 fontSize: contactFontSize * textScaleFactor,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0XFF3D3D3D),
+                                color: AppColors.textPrimary,
+                                fontFamily: 'IBMPlex',
                               ),
                               textAlign: TextAlign.center,
                               overflow: TextOverflow.ellipsis,
@@ -143,7 +146,8 @@ class _ContactScreenState extends State<ContactScreen> {
                               style: TextStyle(
                                 fontSize: contactFontSize * textScaleFactor,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0XFF3D3D3D),
+                                color: AppColors.textPrimary,
+                                fontFamily: 'IBMPlex',
                               ),
                               textAlign: TextAlign.center,
                               overflow: TextOverflow.ellipsis,
@@ -166,11 +170,11 @@ class _ContactScreenState extends State<ContactScreen> {
                       ),
                       Expanded(
                         child: Container(
-                          color: Colors.white,
+                          color: AppColors.background,
                           child: Align(
                             alignment: FractionalOffset.bottomCenter,
                             child: Container(
-                              color: Colors.white,
+                              color: AppColors.background,
                               padding: EdgeInsets.only(
                                 top: bottomPadding,
                                 bottom: bottomPadding + MediaQuery.of(context).padding.bottom,
@@ -187,7 +191,7 @@ class _ContactScreenState extends State<ContactScreen> {
                                       Flexible(
                                         child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: Color(0XFF888888),
+                                            backgroundColor: AppColors.buttonPrimary,
                                             minimumSize: Size(
                                               responsiveButtonWidth,
                                               buttonHeight.clamp(50.0, 80.0),
@@ -213,7 +217,7 @@ class _ContactScreenState extends State<ContactScreen> {
                                       Flexible(
                                         child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: Color(0XFF888888),
+                                            backgroundColor: AppColors.buttonPrimary,
                                             minimumSize: Size(
                                               responsiveButtonWidth,
                                               buttonHeight.clamp(50.0, 80.0),
@@ -239,7 +243,7 @@ class _ContactScreenState extends State<ContactScreen> {
                                       Flexible(
                                         child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
-                                            backgroundColor: Color(0XFF888888),
+                                            backgroundColor: AppColors.buttonPrimary,
                                             minimumSize: Size(
                                               responsiveButtonWidth,
                                               buttonHeight.clamp(50.0, 80.0),
@@ -272,7 +276,7 @@ class _ContactScreenState extends State<ContactScreen> {
                       // Container أبيض لملء المساحة السفلية وتغطية شريط التنقل
                       Container(
                         height: MediaQuery.of(context).padding.bottom,
-                        color: Colors.white,
+                        color: AppColors.background,
                       ),
                     ],
                   ),
@@ -295,3 +299,4 @@ class _ContactScreenState extends State<ContactScreen> {
     // );
   }
 }
+ 

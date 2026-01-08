@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tamra/presentation/screens/order_screen.dart';
 import 'package:tamra/presentation/widgets/custom_gradient_divider.dart';
 import 'package:tamra/services/orders_service.dart';
+import 'package:tamra/constants/app_colors.dart';
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({Key? key}) : super(key: key);
@@ -34,28 +35,28 @@ class _OrdersScreenState extends State<OrdersScreen> {
   // Helper widget to display price with riyal symbol
   Widget _buildPriceWithSymbol(BuildContext context, double price,
       {double? fontSize, FontWeight? fontWeight, Color? color}) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isVerySmallScreen = screenWidth < 360;
-
     final effectiveFontSize = fontSize ?? _getResponsiveFontSize(context, 18);
     final effectiveFontWeight = fontWeight ?? FontWeight.w700;
-    final effectiveColor = color ?? Color(0XFF3D3D3D);
-    final symbolSize =
-        isVerySmallScreen ? effectiveFontSize * 0.9 : effectiveFontSize * 1.0;
+    final effectiveColor = color ?? AppColors.primary;
+    final symbolSize = effectiveFontSize * 0.9;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          price.toStringAsFixed(2),
-          style: TextStyle(
-            color: effectiveColor,
-            fontSize: effectiveFontSize,
-            fontWeight: effectiveFontWeight,
+        Flexible(
+          child: Text(
+            price.toStringAsFixed(2),
+            style: TextStyle(
+              color: effectiveColor,
+              fontSize: effectiveFontSize,
+              fontWeight: effectiveFontWeight,
+              fontFamily: 'IBMPlex',
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        SizedBox(width: 4),
+        SizedBox(width: 3),
         Image.asset(
           'assets/images/riyal_symbol.png',
           width: symbolSize,
@@ -96,7 +97,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   width: 80,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4),
-                                    color: Color(0XFFE0E0E0),
+                                    color: AppColors.borderGray,
                                   ),
                                 ),
                                 Container(
@@ -104,7 +105,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   width: 60,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4),
-                                    color: Color(0XFFE0E0E0),
+                                    color: AppColors.borderGray,
                                   ),
                                 ),
                               ],
@@ -118,7 +119,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   width: 70,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(4),
-                                    color: Color(0XFFE0E0E0),
+                                    color: AppColors.borderGray,
                                   ),
                                 ),
                                 Container(
@@ -225,7 +226,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 Icon(
                   isNetworkError ? Icons.wifi_off : Icons.error_outline,
                   size: 64,
-                  color: Color(0XFFD1D1D1),
+                  color: AppColors.borderLight,
                 ),
                 SizedBox(height: 16),
                 Text(
@@ -234,8 +235,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       : 'حدث خطأ في تحميل الطلبات',
                   style: TextStyle(
                     fontSize: 18,
-                    color: Color(0XFF5B5B5B),
+                    color: AppColors.textMedium,
                     fontWeight: FontWeight.w600,
+                    fontFamily: 'IBMPlex',
                   ),
                 ),
                 SizedBox(height: 8),
@@ -246,7 +248,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(0XFF909090),
+                    color: AppColors.textPlaceholder,
+                    fontFamily: 'IBMPlex',
                   ),
                 ),
               ],
@@ -257,13 +260,40 @@ class _OrdersScreenState extends State<OrdersScreen> {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(
             child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Text(
-                'لا توجد طلبات',
-                style: TextStyle(
-                  color: Color(0XFF5B5B5B),
-                  fontSize: 18,
-                ),
+              padding: EdgeInsets.all(40),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.shopping_bag_outlined,
+                    size: 80,
+                    color: AppColors.borderLight,
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'لا توجد طلبات',
+                    style: TextStyle(
+                      color: AppColors.textMedium,
+                      fontSize: 20,
+                      fontFamily: 'IBMPlex',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    status == 'cancelled'
+                        ? 'لا توجد طلبات ملغاة'
+                        : status == 'delivered'
+                            ? 'لا توجد طلبات تم تسليمها'
+                            : 'لا توجد طلبات حالية',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.textPlaceholder,
+                      fontSize: 14,
+                      fontFamily: 'IBMPlex',
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -319,9 +349,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               Text(
                                 orderNumber,
                                 style: TextStyle(
-                                  color: Color(0XFF3D3D3D),
+                                  color: AppColors.textPrimary,
                                   fontSize: _getResponsiveFontSize(context, 16),
                                   fontWeight: FontWeight.w600,
+                                  fontFamily: 'IBMPlex',
                                 ),
                               ),
                               _buildPriceWithSymbol(
@@ -329,6 +360,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 total,
                                 fontSize: _getResponsiveFontSize(context, 18),
                                 fontWeight: FontWeight.w700,
+                                color: AppColors.primary,
                               ),
                             ],
                           ),
@@ -339,26 +371,29 @@ class _OrdersScreenState extends State<OrdersScreen> {
                               Text(
                                 _formatDate(createdAt),
                                 style: TextStyle(
-                                  color: Color(0XFF3D3D3D),
+                                  color: AppColors.textSecondary,
                                   fontSize: _getResponsiveFontSize(context, 14),
                                   fontWeight: FontWeight.w500,
+                                  fontFamily: 'IBMPlex',
                                 ),
                               ),
                               ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   foregroundColor: Colors.white,
-                                  backgroundColor: Color(0Xff112E5B),
+                                  backgroundColor: AppColors.buttonAccent,
                                   shape: RoundedRectangleBorder(
                                     borderRadius:
-                                        BorderRadius.all(Radius.circular(25)),
+                                        BorderRadius.all(Radius.circular(12)),
                                   ),
                                   padding: EdgeInsets.symmetric(
-                                    horizontal: isVerySmallScreen ? 8 : 10,
-                                    vertical: 6,
+                                    horizontal: isVerySmallScreen ? 12 : 16,
+                                    vertical: 8,
                                   ),
-                                  minimumSize: Size(0, 32),
+                                  minimumSize: Size(0, 36),
+                                  elevation: 0,
                                 ),
                                 onPressed: () {
+                                  HapticFeedback.lightImpact();
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -372,7 +407,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize:
-                                        _getResponsiveFontSize(context, 12),
+                                        _getResponsiveFontSize(context, 13),
+                                    fontFamily: 'IBMPlex',
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -395,77 +432,137 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     padding: EdgeInsets.symmetric(
                         horizontal: isSmallScreen ? 5 : 10),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        // رقم الطلب والسعر في بطاقة واحدة
                         Expanded(
-                          flex: isSmallScreen ? 2 : 2,
-                          child: Text(
-                            orderNumber,
-                            style: TextStyle(
-                              color: Color(0XFF3D3D3D),
-                              fontSize: _getResponsiveFontSize(context, 16),
-                              fontWeight: FontWeight.w600,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Flexible(child: SizedBox(width: isSmallScreen ? 4 : 8)),
-                        Expanded(
-                          flex: isSmallScreen ? 4 : 3,
-                          child: _buildPriceWithSymbol(
-                            context,
-                            total,
-                            fontSize: _getResponsiveFontSize(context, 18),
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Flexible(child: SizedBox(width: isSmallScreen ? 4 : 8)),
-                        Expanded(
-                          flex: isSmallScreen ? 4 : 3,
-                          child: Text(
-                            _formatDate(createdAt),
-                            style: TextStyle(
-                              color: Color(0XFF3D3D3D),
-                              fontSize: _getResponsiveFontSize(context, 16),
-                              fontWeight: FontWeight.w500,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Flexible(child: SizedBox(width: isSmallScreen ? 4 : 8)),
-                        Expanded(
-                          flex: isSmallScreen ? 4 : 3,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              backgroundColor: Color(0Xff112E5B),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(25)),
+                          child: Container(
+                            padding: EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: AppColors.backgroundLight,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.borderLight.withOpacity(0.5),
+                                width: 1,
                               ),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isSmallScreen ? 6 : 10,
-                                vertical: isSmallScreen ? 6 : 8,
-                              ),
-                              minimumSize: Size(0, isSmallScreen ? 32 : 36),
                             ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      OrderScreen(orderId: orderId),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // رقم الطلب
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'رقم الطلب',
+                                        style: TextStyle(
+                                          color: AppColors.textPlaceholder,
+                                          fontSize: _getResponsiveFontSize(context, 11),
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'IBMPlex',
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        orderNumber,
+                                        style: TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: _getResponsiveFontSize(context, 16),
+                                          fontWeight: FontWeight.w700,
+                                          fontFamily: 'IBMPlex',
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              );
-                            },
-                            child: Text(
-                              'تفاصيل',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: _getResponsiveFontSize(context, 14),
-                              ),
+                                SizedBox(width: 12),
+                                // السعر
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'الإجمالي',
+                                        style: TextStyle(
+                                          color: AppColors.textPlaceholder,
+                                          fontSize: _getResponsiveFontSize(context, 11),
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'IBMPlex',
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      _buildPriceWithSymbol(
+                                        context,
+                                        total,
+                                        fontSize: _getResponsiveFontSize(context, 18),
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primary,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                        ),
+                        SizedBox(width: 12),
+                        // التاريخ والزر
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _formatDate(createdAt),
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: _getResponsiveFontSize(context, 12),
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'IBMPlex',
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            SizedBox(
+                              width: isSmallScreen ? 80 : 100,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  backgroundColor: AppColors.buttonAccent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(12)),
+                                  ),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  minimumSize: Size(0, 40),
+                                  elevation: 0,
+                                ),
+                                onPressed: () {
+                                  HapticFeedback.lightImpact();
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          OrderScreen(orderId: orderId),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'تفاصيل',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: _getResponsiveFontSize(context, 14),
+                                    fontFamily: 'IBMPlex',
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -487,11 +584,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
   void initState() {
     super.initState();
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
-        statusBarColor: Colors.white,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.white,
+      SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: AppColors.background,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
     );
@@ -500,27 +595,22 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle(
+      SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.white,
+        systemNavigationBarColor: AppColors.background,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
     );
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.white,
+        systemNavigationBarColor: AppColors.background,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: DefaultTabController(
         length: 3,
         child: Scaffold(
-            backgroundColor: Colors.white,
-            // resizeToAvoidBottomInset: false,
+            backgroundColor: AppColors.background,
             appBar: AppBar(
               elevation: 0.0,
               centerTitle: true,
@@ -536,53 +626,67 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () {
+                        HapticFeedback.lightImpact();
                         Navigator.pop(context);
                       },
+                      borderRadius: BorderRadius.circular(20),
                       child: Icon(
-                        color: Color(0XFF575757),
-                        Icons.arrow_back,
+                        color: AppColors.iconColor,
+                        Icons.arrow_back_rounded,
                         size: MediaQuery.of(context).size.width < 360
                             ? 26.0
-                            : 30.0,
+                            : 28.0,
                       ),
                     ),
                   ),
                   SizedBox(
                       width: MediaQuery.of(context).size.width < 360 ? 10 : 20),
-                  Text('طلباتي',
-                      style: TextStyle(
-                        color: Color(0XFF3D3D3D),
-                        fontSize: _getResponsiveFontSize(context, 20),
-                        fontWeight: FontWeight.w600,
-                      )),
+                  Text(
+                    'طلباتي',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: _getResponsiveFontSize(context, 20),
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'IBMPlex',
+                    ),
+                  ),
                 ],
               ),
               bottom: TabBar(
-                indicatorColor: Color(0XFF707070),
+                indicatorColor: AppColors.primary,
+                indicatorWeight: 3,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.textSecondary,
                 tabs: [
                   Tab(
-                    child: Text('حالية',
-                        style: TextStyle(
-                          color: Color(0XFF3D3D3D),
-                          fontSize: _getResponsiveFontSize(context, 18),
-                          fontWeight: FontWeight.w500,
-                        )),
+                    child: Text(
+                      'حالية',
+                      style: TextStyle(
+                        fontSize: _getResponsiveFontSize(context, 16),
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'IBMPlex',
+                      ),
+                    ),
                   ),
                   Tab(
-                    child: Text('ملغية',
-                        style: TextStyle(
-                          color: Color(0XFF3D3D3D),
-                          fontSize: _getResponsiveFontSize(context, 18),
-                          fontWeight: FontWeight.w500,
-                        )),
+                    child: Text(
+                      'ملغية',
+                      style: TextStyle(
+                        fontSize: _getResponsiveFontSize(context, 16),
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'IBMPlex',
+                      ),
+                    ),
                   ),
                   Tab(
-                    child: Text('تم التسليم',
-                        style: TextStyle(
-                          color: Color(0XFF3D3D3D),
-                          fontSize: _getResponsiveFontSize(context, 18),
-                          fontWeight: FontWeight.w500,
-                        )),
+                    child: Text(
+                      'تم التسليم',
+                      style: TextStyle(
+                        fontSize: _getResponsiveFontSize(context, 16),
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'IBMPlex',
+                      ),
+                    ),
                   ),
                 ],
               ),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tamra/presentation/screens/add_address_screen.dart';
 import 'package:tamra/services/addresses_service.dart';
+import 'package:tamra/constants/app_colors.dart';
 
 class AddressesScreen extends StatefulWidget {
   final String? selectedAddressId; // للسماح باختيار عنوان من القائمة
@@ -138,43 +139,79 @@ class _AddressesScreenState extends State<AddressesScreen> {
 
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
               return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.location_off,
-                      size: 64,
-                      color: Colors.grey,
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'لا توجد عناوين',
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Color(0Xff7C3425),
-                        padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
+                child: Padding(
+                  padding: EdgeInsets.all(40),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.location_off_outlined,
+                          size: 64,
+                          color: AppColors.primary,
                         ),
                       ),
-                      onPressed: () async {
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AddAddressScreen(),
+                      SizedBox(height: 24),
+                      Text(
+                        'لا توجد عناوين مسجلة',
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'IBMPlex',
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'أضف عنوانك الأول لتتمكن من\nاستلام طلباتك بسهولة',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.textPlaceholder,
+                          fontFamily: 'IBMPlex',
+                          height: 1.5,
+                        ),
+                      ),
+                      SizedBox(height: 32),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          HapticFeedback.mediumImpact();
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddAddressScreen(),
+                            ),
+                          );
+                          if (result == true && mounted) {
+                            setState(() {}); // إعادة تحميل
+                          }
+                        },
+                        icon: Icon(Icons.add_location_alt_rounded),
+                        label: Text(
+                          'إضافة عنوان جديد',
+                          style: TextStyle(
+                            fontFamily: 'IBMPlex',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
-                        );
-                        if (result == true) {
-                          setState(() {}); // إعادة تحميل
-                        }
-                      },
-                      child: Text('إضافة عنوان جديد'),
-                    ),
-                  ],
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: AppColors.primary,
+                          padding: EdgeInsets.symmetric(horizontal: 30, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }

@@ -5,11 +5,17 @@ import 'package:tamra/presentation/screens/account_screen.dart';
 import 'package:tamra/presentation/screens/basket_screen.dart';
 import 'package:tamra/presentation/screens/home_screen.dart';
 import '../../l10n/app_localizations.dart';
+import '../../constants/app_colors.dart';
 
 class LayoutScreen extends StatefulWidget {
   const LayoutScreen({Key? key}) : super(key: key);
   @override
   State<LayoutScreen> createState() => _LayoutScreenState();
+
+  // Helper method to access the state from child widgets
+  static _LayoutScreenState? of(BuildContext context) {
+    return context.findAncestorStateOfType<_LayoutScreenState>();
+  }
 }
 
 class _LayoutScreenState extends State<LayoutScreen> {
@@ -26,31 +32,36 @@ class _LayoutScreenState extends State<LayoutScreen> {
     });
   }
 
+  // Method to navigate to home screen (for external access)
+  void navigateToHome() {
+    _onItemTapped(0);
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
-        statusBarColor: Colors.white,
+        statusBarColor: AppColors.background,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.white,
+        systemNavigationBarColor: AppColors.background,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background,
         resizeToAvoidBottomInset: false,
         body: SafeArea(
           child: _widgetOptions.elementAt(_selectedIndex),
         ),
         bottomNavigationBar: BottomNavigationBar(
             type: BottomNavigationBarType.fixed,
-            selectedItemColor: Color(0XFF7C3425),
+            selectedItemColor: AppColors.primary,
             selectedLabelStyle:
-                TextStyle(color: Color(0XFF7C3425), fontSize: 15),
-            unselectedItemColor: Color(0XFF707070),
+                TextStyle(color: AppColors.primary, fontSize: 15, fontFamily: 'IBMPlex'),
+            unselectedItemColor: AppColors.textSecondary,
             unselectedLabelStyle:
-                TextStyle(color: Color(0XFF707070), fontSize: 15),
+                TextStyle(color: AppColors.textSecondary, fontSize: 15, fontFamily: 'IBMPlex'),
             items: <BottomNavigationBarItem>[
               BottomNavigationBarItem(
                 icon: Icon(Icons.home),

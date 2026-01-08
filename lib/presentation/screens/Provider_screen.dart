@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,8 @@ import 'package:tamra/services/vendors_service.dart';
 import 'package:tamra/providers/cart_provider.dart';
 import 'package:tamra/models/cart_item.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tamra/constants/app_colors.dart';
+import 'package:tamra/presentation/widgets/custom_gradient_divider.dart';
 
 class ProviderScreen extends StatefulWidget {
   final String vendorId;
@@ -25,8 +28,11 @@ class _ProviderScreenState extends State<ProviderScreen> {
   final ClientProductsService _productsService = ClientProductsService();
   final VendorsService _vendorsService = VendorsService();
   final TextEditingController _searchController = TextEditingController();
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
   String? _selectedCategory;
   int _selected = 0; // 0 = الكل، 1 = فواكه، 2 = خضار، إلخ
+  String _searchQuery = '';
+  Timer? _searchDebounceTimer;
 
   @override
   void initState() {
@@ -45,10 +51,11 @@ class _ProviderScreenState extends State<ProviderScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _searchDebounceTimer?.cancel();
     super.dispose();
   }
 
-  void _updateQuantity(String productId, int delta, Map<String, dynamic> product) {
+  void _updateQuantity(String productId, int delta, Map<String, dynamic> product) async {
     // إضافة/تحديث المنتج في السلة مباشرة
     final cartProvider = Provider.of<CartProvider>(context, listen: false);
     final cartItem = cartProvider.cart.getItem(productId);
@@ -58,9 +65,11 @@ class _ProviderScreenState extends State<ProviderScreen> {
     if (newQuantity > 0) {
       // إذا كان المنتج موجود بالفعل، استخدم updateQuantity
       if (cartItem != null) {
+        HapticFeedback.selectionClick();
         cartProvider.updateQuantity(productId, newQuantity);
       } else {
         // إذا كان المنتج غير موجود، أضفه جديد
+        HapticFeedback.mediumImpact();
         final newItem = CartItem(
           productId: productId,
           nameAr: product['nameAr'] ?? '',
@@ -72,9 +81,103 @@ class _ProviderScreenState extends State<ProviderScreen> {
           quantity: newQuantity,
         );
         cartProvider.addItem(newItem);
+        // رسالة نجاح عند الإضافة
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'تمت إضافة ${product['nameAr'] ?? 'المنتج'} إلى السلة',
+                    style: TextStyle(fontFamily: 'IBMPlex'),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            margin: EdgeInsets.all(16),
+            duration: Duration(seconds: 2),
+          ),
+        );
       }
     } else {
-      cartProvider.removeItem(productId);
+      // طلب تأكيد قبل الحذف إذا كانت الكمية الحالية > 0
+      if (currentQuantity > 0) {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Row(
+                children: [
+                  Icon(Icons.delete_outline, color: Colors.red, size: 24),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'حذف المنتج',
+                      style: TextStyle(
+                        fontFamily: 'IBMPlex',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                'هل أنت متأكد من حذف ${product['nameAr'] ?? 'هذا المنتج'} من السلة؟',
+                style: TextStyle(
+                  fontFamily: 'IBMPlex',
+                  fontSize: 16,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(
+                    'إلغاء',
+                    style: TextStyle(
+                      fontFamily: 'IBMPlex',
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    Navigator.of(context).pop(true);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'حذف',
+                    style: TextStyle(fontFamily: 'IBMPlex'),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+
+        if (confirmed == true) {
+          cartProvider.removeItem(productId);
+        }
+      } else {
+        cartProvider.removeItem(productId);
+      }
     }
   }
 
@@ -82,22 +185,26 @@ class _ProviderScreenState extends State<ProviderScreen> {
   Widget _buildPriceWithSymbol(BuildContext context, double price, {double? fontSize, FontWeight? fontWeight, Color? color}) {
     final effectiveFontSize = fontSize ?? 14.0;
     final effectiveFontWeight = fontWeight ?? FontWeight.w500;
-    final effectiveColor = color ?? Color(0XFF5B5B5B);
-    final symbolSize = effectiveFontSize * 1.0;
+    final effectiveColor = color ?? AppColors.textMedium;
+    final symbolSize = effectiveFontSize * 0.9;
     
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          price.toStringAsFixed(2),
-          style: TextStyle(
-            color: effectiveColor,
-            fontSize: effectiveFontSize,
-            fontWeight: effectiveFontWeight,
+        Flexible(
+          child: Text(
+            price.toStringAsFixed(2),
+            style: TextStyle(
+              color: effectiveColor,
+              fontSize: effectiveFontSize,
+              fontWeight: effectiveFontWeight,
+              fontFamily: 'IBMPlex',
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        SizedBox(width: 4),
+        SizedBox(width: 3),
         Image.asset(
           'assets/images/riyal_symbol.png',
           width: symbolSize,
@@ -153,11 +260,11 @@ class _ProviderScreenState extends State<ProviderScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? Color(0XFF7C3425) : Color(0XFFD1D1D1),
+            color: isSelected ? AppColors.primary : AppColors.borderLight,
             width: borderWidth,
             style: BorderStyle.solid,
           ),
-          color: isSelected ? Color(0XFF7C3425) : Colors.white,
+          color: isSelected ? AppColors.primary : Colors.white,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -170,8 +277,9 @@ class _ProviderScreenState extends State<ProviderScreen> {
             Text(
               categoryName,
               style: TextStyle(
-                color: isSelected ? Colors.white : Color(0XFF909090),
+                color: isSelected ? Colors.white : AppColors.textPlaceholder,
                 fontSize: 18,
+                fontFamily: 'IBMPlex',
               ),
             ),
             if (isSelected) ...[
@@ -253,7 +361,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                     Navigator.pop(context);
                   },
                   child: Icon(
-                    color: Color(0XFF575757),
+                    color: AppColors.iconColor,
                     Icons.arrow_back,
                     size: 30.0,
                   ),
@@ -263,9 +371,10 @@ class _ProviderScreenState extends State<ProviderScreen> {
               Text(
                 vendorName,
                 style: TextStyle(
-                  color: Color(0XFF3D3D3D),
+                  color: AppColors.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
+                  fontFamily: 'IBMPlex',
                 ),
               ),
             ],
@@ -308,17 +417,19 @@ class _ProviderScreenState extends State<ProviderScreen> {
                             Text(
                               vendorName,
                               style: TextStyle(
-                                color: Color(0XFF5B5B5B),
+                                color: AppColors.textPrimary,
                                 fontSize: 25,
                                 fontWeight: FontWeight.bold,
+                                fontFamily: 'IBMPlex',
                               ),
                             ),
                             Text(
                               '$productsCount منتج',
                               style: TextStyle(
-                                color: Color(0XFF5B5B5B),
-                                fontSize: 15,
+                                color: AppColors.textPlaceholder,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w500,
+                                fontFamily: 'IBMPlex',
                               ),
                             ),
                           ],
@@ -334,18 +445,87 @@ class _ProviderScreenState extends State<ProviderScreen> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10.0),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12.0),
+                              borderSide: BorderSide(
+                                color: AppColors.borderLight,
+                                width: 1,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12.0),
+                              borderSide: BorderSide(
+                                color: AppColors.borderLight,
+                                width: 1,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12.0),
+                              borderSide: BorderSide(
+                                color: AppColors.primary,
+                                width: 2,
+                              ),
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: _searchQuery.isNotEmpty 
+                                  ? AppColors.primary 
+                                  : AppColors.textPlaceholder,
+                            ),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(
+                                      Icons.clear,
+                                      color: AppColors.textPlaceholder,
+                                    ),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() {
+                                        _searchQuery = '';
+                                      });
+                                      HapticFeedback.lightImpact();
+                                    },
+                                  )
+                                : null,
+                            hintText: 'البحث عن منتج...',
+                            hintStyle: TextStyle(
+                              color: AppColors.textPlaceholder,
+                              fontFamily: 'IBMPlex',
+                            ),
+                            filled: true,
+                            fillColor: AppColors.backgroundLight,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
                           ),
-                          prefixIcon: Icon(Icons.search),
-                          hintText: 'البحث عن منتج',
+                          style: TextStyle(
+                            fontFamily: 'IBMPlex',
+                            fontSize: 16,
+                            color: AppColors.textPrimary,
+                          ),
+                          onChanged: (value) {
+                            // Debounce البحث لتقليل عدد الطلبات
+                            _searchDebounceTimer?.cancel();
+                            _searchDebounceTimer = Timer(Duration(milliseconds: 500), () {
+                              if (mounted) {
+                                setState(() {
+                                  _searchQuery = value.trim();
+                                });
+                              }
+                            });
+                          },
+                          onSubmitted: (value) {
+                            setState(() {
+                              _searchQuery = value.trim();
+                            });
+                          },
                         ),
-                        onChanged: (value) {
-                          // يمكن إضافة وظيفة البحث هنا لاحقاً
-                        },
                       ),
                     ),
                   ],
@@ -386,7 +566,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                              color: Color(0XFFD1D1D1),
+                              color: AppColors.borderLight,
                               width: 1.0,
                               style: BorderStyle.solid),
                           color: Colors.white,
@@ -398,7 +578,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                           ),
                           Text('حمضيات',
                               style: TextStyle(
-                                color: Color(0XFF909090),
+                                color: AppColors.textPlaceholder,
                                 fontSize: 18,
                               )),
                         ]),
@@ -412,7 +592,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                       //   decoration: BoxDecoration(
                       //     borderRadius: BorderRadius.circular(20),
                       //     border: Border.all(
-                      //         color: Color(0XFFD1D1D1),
+                      //         color: AppColors.borderLight,
                       //         width: 1.0,
                       //         style: BorderStyle.solid),
                       //     color: Colors.white,
@@ -424,7 +604,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                       //     ),
                       //     Text('استوائة',
                       //         style: TextStyle(
-                      //           color: Color(0XFF909090),
+                      //           color: AppColors.textPlaceholder,
                       //           fontSize: 18,
                       //         )),
                       //   ]),
@@ -438,7 +618,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                       //   decoration: BoxDecoration(
                       //     borderRadius: BorderRadius.circular(20),
                       //     border: Border.all(
-                      //         color: Color(0XFFD1D1D1),
+                      //         color: AppColors.borderLight,
                       //         width: 1.0,
                       //         style: BorderStyle.solid),
                       //     color: Colors.white,
@@ -450,7 +630,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                       //     ),
                       //     Text('محليه',
                       //         style: TextStyle(
-                      //           color: Color(0XFF909090),
+                      //           color: AppColors.textPlaceholder,
                       //           fontSize: 18,
                       //         )),
                       //   ]),
@@ -478,7 +658,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                   top: BorderSide(
                                     width: 0.5,
                                     style: BorderStyle.solid,
-                                    color: Color(0XFF707070),
+                                    color: AppColors.textSecondary,
                                   ),
                                 ),
                               ),
@@ -493,7 +673,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                           height: 90,
                                           decoration: BoxDecoration(
                                             borderRadius: BorderRadius.circular(8),
-                                            color: Color(0XFFE0E0E0),
+                                            color: AppColors.borderGray,
                                           ),
                                         ),
                                         SizedBox(width: 10),
@@ -506,7 +686,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                                 width: 150,
                                                 decoration: BoxDecoration(
                                                   borderRadius: BorderRadius.circular(4),
-                                                  color: Color(0XFFE0E0E0),
+                                                  color: AppColors.borderGray,
                                                 ),
                                               ),
                                               SizedBox(height: 8),
@@ -515,7 +695,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                                 width: 80,
                                                 decoration: BoxDecoration(
                                                   borderRadius: BorderRadius.circular(4),
-                                                  color: Color(0XFFE0E0E0),
+                                                  color: AppColors.borderGray,
                                                 ),
                                               ),
                                             ],
@@ -535,7 +715,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                           ),
                                           decoration: BoxDecoration(
                                             borderRadius: BorderRadius.circular(50),
-                                            color: Color(0XFFeeeeee),
+                                            color: AppColors.backgroundGray,
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
@@ -545,7 +725,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                                 height: 45,
                                                 decoration: BoxDecoration(
                                                   borderRadius: BorderRadius.circular(4),
-                                                  color: Color(0XFFE0E0E0),
+                                                  color: AppColors.borderGray,
                                                 ),
                                               ),
                                               SizedBox(width: 10),
@@ -555,11 +735,11 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                                 decoration: BoxDecoration(
                                                   borderRadius: BorderRadius.circular(1),
                                                   border: Border.all(
-                                                    color: Color(0XFFD1D1D1),
+                                                    color: AppColors.borderLight,
                                                     width: 1.0,
                                                     style: BorderStyle.solid,
                                                   ),
-                                                  color: Color(0XFFE0E0E0),
+                                                  color: AppColors.borderGray,
                                                 ),
                                               ),
                                               SizedBox(width: 10),
@@ -568,7 +748,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                                 height: 45,
                                                 decoration: BoxDecoration(
                                                   borderRadius: BorderRadius.circular(4),
-                                                  color: Color(0XFFE0E0E0),
+                                                  color: AppColors.borderGray,
                                                 ),
                                               ),
                                             ],
@@ -599,7 +779,7 @@ class _ProviderScreenState extends State<ProviderScreen> {
                               Icon(
                                 isNetworkError ? Icons.wifi_off : Icons.error_outline,
                                 size: 64,
-                                color: Color(0XFFD1D1D1),
+                                color: AppColors.borderLight,
                               ),
                               SizedBox(height: 16),
                               Text(
@@ -608,8 +788,9 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                   : 'حدث خطأ في تحميل المنتجات',
                                 style: TextStyle(
                                   fontSize: 18,
-                                  color: Color(0XFF5B5B5B),
+                                  color: AppColors.textMedium,
                                   fontWeight: FontWeight.w600,
+                                  fontFamily: 'IBMPlex',
                                 ),
                               ),
                               SizedBox(height: 8),
@@ -620,7 +801,8 @@ class _ProviderScreenState extends State<ProviderScreen> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 14,
-                                  color: Color(0XFF909090),
+                                  color: AppColors.textPlaceholder,
+                                  fontFamily: 'IBMPlex',
                                 ),
                               ),
                             ],
@@ -630,22 +812,109 @@ class _ProviderScreenState extends State<ProviderScreen> {
 
                       if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                         return Center(
-                          child: Text(
-                            'لا توجد منتجات',
-                            style: TextStyle(
-                              color: Color(0XFF5B5B5B),
-                              fontSize: 18,
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.inventory_2_outlined,
+                                  size: 80,
+                                  color: AppColors.borderLight,
+                                ),
+                                SizedBox(height: 20),
+                                Text(
+                                  'لا توجد منتجات',
+                                  style: TextStyle(
+                                    color: AppColors.textMedium,
+                                    fontSize: 20,
+                                    fontFamily: 'IBMPlex',
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  _selectedCategory != null
+                                      ? 'لا توجد منتجات في هذه الفئة حالياً'
+                                      : 'لا توجد منتجات متاحة حالياً',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AppColors.textPlaceholder,
+                                    fontSize: 14,
+                                    fontFamily: 'IBMPlex',
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         );
                       }
 
-                      final products = snapshot.data!.docs;
+                      var products = snapshot.data!.docs;
+
+                      // فلترة المنتجات حسب البحث
+                      if (_searchQuery.isNotEmpty) {
+                        products = products.where((doc) {
+                          final productData = doc.data() as Map<String, dynamic>;
+                          final nameAr = (productData['nameAr'] ?? '').toString().toLowerCase();
+                          final nameEn = (productData['nameEn'] ?? '').toString().toLowerCase();
+                          final searchLower = _searchQuery.toLowerCase();
+                          return nameAr.contains(searchLower) || nameEn.contains(searchLower);
+                        }).toList();
+                      }
+
+                      // إذا كانت نتائج البحث فارغة
+                      if (_searchQuery.isNotEmpty && products.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(40),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.search_off,
+                                  size: 80,
+                                  color: AppColors.borderLight,
+                                ),
+                                SizedBox(height: 20),
+                                Text(
+                                  'لا توجد نتائج',
+                                  style: TextStyle(
+                                    color: AppColors.textMedium,
+                                    fontSize: 20,
+                                    fontFamily: 'IBMPlex',
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'لم يتم العثور على منتجات تطابق "$_searchQuery"',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AppColors.textPlaceholder,
+                                    fontSize: 14,
+                                    fontFamily: 'IBMPlex',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
 
                       return Consumer<CartProvider>(
                         builder: (context, cartProvider, child) {
-                          return ListView(
-                            children: [
+                          return RefreshIndicator(
+                            key: _refreshIndicatorKey,
+                            onRefresh: () async {
+                              // تحديث البيانات عن طريق إعادة بناء StreamBuilder
+                              setState(() {});
+                              await Future.delayed(Duration(milliseconds: 500));
+                            },
+                            color: AppColors.primary,
+                            backgroundColor: AppColors.background,
+                            child: ListView(
+                              children: [
                           ...products.map((doc) {
                             final product = doc.data() as Map<String, dynamic>;
                             final productId = doc.id;
@@ -655,214 +924,277 @@ class _ProviderScreenState extends State<ProviderScreen> {
                             final imageUrl = product['imageUrl'] as String? ?? '';
                             final quantity = cartProvider.cart.getItem(productId)?.quantity ?? 0;
 
-                        return Container(
-                          padding: EdgeInsets.only(top: 15, bottom: 10),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              top: BorderSide(
-                                width: 0.5,
-                                style: BorderStyle.solid,
-                                color: Color(0XFF707070),
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                flex: 1,
-                                child: Row(
-                                  children: [
-                                    imageUrl.isNotEmpty
-                                        ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(8),
-                                            child: Image.network(
-                                              imageUrl,
-                                              height: 90,
-                                              width: 90,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) {
-                                                return Image.asset(
-                                                  'assets/images/pr_1.png',
-                                                  height: 90,
-                                                );
-                                              },
-                                            ),
+                        return Column(
+                          children: [
+                            CustomGradientDivider(),
+                            Container(
+                              padding: EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                              child: Row(
+                                children: [
+                                  // صورة المنتج
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: imageUrl.isNotEmpty
+                                        ? Image.network(
+                                            imageUrl,
+                                            width: 75,
+                                            height: 75,
+                                            fit: BoxFit.cover,
+                                            loadingBuilder: (context, child, loadingProgress) {
+                                              if (loadingProgress == null) return child;
+                                              return Container(
+                                                width: 75,
+                                                height: 75,
+                                                color: AppColors.backgroundGray,
+                                                child: Center(
+                                                  child: SizedBox(
+                                                    width: 20,
+                                                    height: 20,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                                        AppColors.primary,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                width: 75,
+                                                height: 75,
+                                                color: AppColors.backgroundGray,
+                                                child: Icon(
+                                                  Icons.image_not_supported_outlined,
+                                                  color: AppColors.textPlaceholder,
+                                                  size: 28,
+                                                ),
+                                              );
+                                            },
                                           )
-                                        : Image.asset(
-                                            'assets/images/pr_1.png',
-                                            height: 90,
+                                        : Container(
+                                            width: 75,
+                                            height: 75,
+                                            color: AppColors.backgroundGray,
+                                            child: Icon(
+                                              Icons.shopping_bag_outlined,
+                                              color: AppColors.textPlaceholder,
+                                              size: 28,
+                                            ),
                                           ),
-                                    SizedBox(width: 10),
-                                    Column(
+                                  ),
+                                  SizedBox(width: 12),
+                                  // معلومات المنتج
+                                  Expanded(
+                                    child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Text(
                                           nameAr,
                                           style: TextStyle(
-                                            color: Color(0XFF5B5B5B),
-                                            fontSize: 18,
+                                            color: AppColors.textPrimary,
+                                            fontSize: 16,
                                             fontWeight: FontWeight.w600,
+                                            fontFamily: 'IBMPlex',
+                                            height: 1.2,
                                           ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        SizedBox(height: 5),
+                                        if (packagingWeight.isNotEmpty) ...[
+                                          SizedBox(height: 4),
+                                          Text(
+                                            packagingWeight,
+                                            style: TextStyle(
+                                              color: AppColors.textPlaceholder,
+                                              fontSize: 11,
+                                              fontFamily: 'IBMPlex',
+                                            ),
+                                          ),
+                                        ],
+                                        SizedBox(height: 8),
                                         _buildPriceWithSymbol(
                                           context,
                                           price.toDouble(),
                                           fontSize: 14,
-                                          fontWeight: FontWeight.w500,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.primary,
                                         ),
-                                        if (packagingWeight.isNotEmpty)
-                                          Text(
-                                            packagingWeight,
-                                            style: TextStyle(
-                                              color: Color(0XFF5B5B5B),
-                                              fontSize: 14,
-                                            ),
-                                          ),
                                       ],
                                     ),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // إذا كانت الكمية 0، عرض زر إضافة مباشر
-                                    if (quantity == 0)
-                                      Flexible(
-                                        child: Material(
-                                          color: Colors.transparent,
-                                          child: InkWell(
-                                          onTap: () => _updateQuantity(productId, 1, product),
-                                          borderRadius: BorderRadius.circular(25),
-                                          child: Container(
-                                            padding: EdgeInsets.symmetric(
-                                              horizontal: 20,
-                                              vertical: 10,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(25),
-                                              color: Color(0XFF7C3425),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Color(0XFF7C3425).withOpacity(0.3),
-                                                  spreadRadius: 0,
-                                                  blurRadius: 8,
-                                                  offset: Offset(0, 2),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.add_shopping_cart,
-                                                  color: Colors.white,
-                                                  size: 20,
-                                                ),
-                                                SizedBox(width: 6),
-                                                Text(
-                                                  'إضافة',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      )
-                                    else
-                                      // إذا كانت الكمية أكبر من 0، عرض أزرار + و - و الكمية
-                                      Flexible(
+                                  ),
+                                  SizedBox(width: 8),
+                                  // إذا كانت الكمية 0، عرض زر إضافة مباشر
+                                  if (quantity == 0)
+                                    Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () {
+                                          HapticFeedback.mediumImpact();
+                                          _updateQuantity(productId, 1, product);
+                                        },
+                                        borderRadius: BorderRadius.circular(12),
                                         child: Container(
                                           padding: EdgeInsets.symmetric(
-                                            horizontal: 5,
-                                            vertical: 4,
+                                            horizontal: 24,
+                                            vertical: 12,
                                           ),
                                           decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(50),
-                                            color: Color(0XFFeeeeee),
+                                            borderRadius: BorderRadius.circular(12),
+                                            color: AppColors.primary,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: AppColors.primary.withOpacity(0.25),
+                                                spreadRadius: 0,
+                                                blurRadius: 6,
+                                                offset: Offset(0, 3),
+                                              ),
+                                            ],
                                           ),
                                           child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          textDirection: TextDirection.rtl,
-                                          children: [
-                                            // زر الإضافة (على اليمين في RTL)
-                                            Material(
-                                              color: Colors.transparent,
-                                              child: InkWell(
-                                                onTap: () => _updateQuantity(productId, 1, product),
-                                                borderRadius: BorderRadius.circular(25),
-                                                child: Padding(
-                                                  padding: EdgeInsets.all(4),
-                                                  child: Image.asset(
-                                                    'assets/images/add_icon.png',
-                                                    height: 45,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            Flexible(child: SizedBox(width: 10)),
-                                            // الكمية في المنتصف
-                                            Container(
-                                              alignment: Alignment.center,
-                                              width: 50,
-                                              height: 50,
-                                              decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(1),
-                                                border: Border.all(
-                                                  color: Color(0XFFD1D1D1),
-                                                  width: 1.0,
-                                                  style: BorderStyle.solid,
-                                                ),
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.add_shopping_cart_rounded,
                                                 color: Colors.white,
+                                                size: 20,
                                               ),
-                                              child: Text(
-                                                quantity.toString(),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                'إضافة',
                                                 style: TextStyle(
-                                                  color: Color(0XFF5B5B5B),
-                                                  fontSize: 20,
+                                                  color: Colors.white,
+                                                  fontSize: 16,
                                                   fontWeight: FontWeight.w600,
+                                                  fontFamily: 'IBMPlex',
                                                 ),
                                               ),
-                                            ),
-                                            Flexible(child: SizedBox(width: 10)),
-                                            // زر النقصان (على اليسار في RTL)
-                                            Material(
-                                              color: Colors.transparent,
-                                              child: InkWell(
-                                                onTap: () => _updateQuantity(productId, -1, product),
-                                                borderRadius: BorderRadius.circular(25),
-                                                child: Padding(
-                                                  padding: EdgeInsets.all(4),
-                                                  child: Image.asset(
-                                                    'assets/images/min_icon.png',
-                                                    height: 45,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
+                                    )
+                                  else
+                                    // إذا كانت الكمية أكبر من 0، عرض أزرار + و - و الكمية
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(10),
+                                        color: AppColors.backgroundLight,
+                                        border: Border.all(
+                                          color: AppColors.primary.withOpacity(0.2),
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        textDirection: TextDirection.rtl,
+                                        children: [
+                                          // زر الإضافة
+                                          Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: () {
+                                                HapticFeedback.selectionClick();
+                                                _updateQuantity(productId, 1, product);
+                                              },
+                                              borderRadius: BorderRadius.only(
+                                                topRight: Radius.circular(10),
+                                                bottomRight: Radius.circular(10),
+                                              ),
+                                              child: Container(
+                                                width: 36,
+                                                height: 36,
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.primary.withOpacity(0.1),
+                                                  borderRadius: BorderRadius.only(
+                                                    topRight: Radius.circular(10),
+                                                    bottomRight: Radius.circular(10),
+                                                  ),
+                                                ),
+                                                child: Icon(
+                                                  Icons.add_rounded,
+                                                  color: AppColors.primary,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          // الكمية
+                                          Container(
+                                            alignment: Alignment.center,
+                                            width: 40,
+                                            height: 36,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              border: Border.symmetric(
+                                                vertical: BorderSide(
+                                                  color: AppColors.primary.withOpacity(0.1),
+                                                  width: 1,
+                                                ),
+                                              ),
+                                            ),
+                                            child: Text(
+                                              '${quantity}',
+                                              style: TextStyle(
+                                                color: AppColors.primary,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w700,
+                                                fontFamily: 'IBMPlex',
+                                              ),
+                                            ),
+                                          ),
+                                          // زر النقصان/الحذف
+                                          Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              onTap: () {
+                                                HapticFeedback.selectionClick();
+                                                _updateQuantity(productId, -1, product);
+                                              },
+                                              borderRadius: BorderRadius.only(
+                                                topLeft: Radius.circular(10),
+                                                bottomLeft: Radius.circular(10),
+                                              ),
+                                              child: Container(
+                                                width: 36,
+                                                height: 36,
+                                                decoration: BoxDecoration(
+                                                  color: quantity == 1
+                                                      ? Colors.red.withOpacity(0.1)
+                                                      : AppColors.primary.withOpacity(0.1),
+                                                  borderRadius: BorderRadius.only(
+                                                    topLeft: Radius.circular(10),
+                                                    bottomLeft: Radius.circular(10),
+                                                  ),
+                                                ),
+                                                child: Icon(
+                                                  quantity == 1
+                                                      ? Icons.delete_outline_rounded
+                                                      : Icons.remove_rounded,
+                                                  color: quantity == 1
+                                                      ? Colors.red
+                                                      : AppColors.primary,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ],
-                                ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         );
                       }).toList(),
                             ],
-                          );
-                        },
-                      );
+                          ),
+                        );
+                      },
+                    );
                     },
                   ),
                 ),
